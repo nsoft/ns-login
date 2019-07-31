@@ -15,4 +15,7 @@
  */
 
 rootProject.name = 'ns-login'
+include 'login'
+include 'core'
+include 'app'
 

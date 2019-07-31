@@ -14,26 +14,7 @@
  *    limitations under the License.
  */
 
-package com.needhamsoftware.nslogin.servlet;
-
-import io.jsonwebtoken.SignatureAlgorithm;
-
-public interface LoginConstants {
-
-  // JWT stuff
-  SignatureAlgorithm SIGNATURE_ALGORITHM = SignatureAlgorithm.RS256;
-  String ISSUER = "nslogin";
-
-  // session key to identify the user
-  String PRINCIPAL = "com.needhamsoftware.nslogin.principal";
-
-  // Login dance headers
-  String X_LOGIN_RETURN_TO = "X-Login-Return-To";
-  String X_JWT_TOKEN = "X-JWT-Token";
-  String X_ERROR_MESSAGE = "X-Error-Message";
-
-  // error messages
-  String ADMINISTRATOR = "Please contact your system administrator for assistance with your account.";
-
-
-}
+/**
+ * Example model and hibernate mapping that should be adapted to fit the needs of the application.
+ */
+package com.needhamsoftware.nslogin.model;

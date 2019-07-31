@@ -53,7 +53,7 @@ public class JwtAuthenticationFilter implements Filter, LoginConstants {
   private LoadingCache<String, byte[]> keyCache = CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.HOURS).build(
       new CacheLoader<>() {
         @Override
-        public byte[] load(@SuppressWarnings("NullableProblems") String key) throws Exception {
+        public byte[] load(String key) throws Exception {
           URL u = new URL(keyFetchUrl + key); // expects the url ends with  kid= and that we get a valid url
           Content content = Request.Get(u.toExternalForm())
               .connectTimeout(100000)
@@ -147,49 +147,20 @@ public class JwtAuthenticationFilter implements Filter, LoginConstants {
       }
 
       session.setAttribute(X_LOGIN_RETURN_TO, returnPath);
-      resp.sendRedirect("/nslogin/?from=" + req.getRequestURL());
+      resp.sendRedirect("/login/?from=" + req.getRequestURL());
       return;
     }
 
     // Just returned from log-in so we need to (re)set the principle
     try {
+      // important not to do anything to the user's session until they are validated by this next
+      // line, otherwise the user might be affected by the actions of an unauthenticated user.
+      Jws<Claims> claimsJws = checkToken(token);
+
+      // No Exception thrown so this token came from the service that was configured as our login url so
+      // now we can trust it's claim about who the logged in user is. At this point we will now trust the user
+      // until their J2EE session expires or they manually log out which invalidates the session.
       session.removeAttribute(PRINCIPAL);
-      Jws<Claims> claimsJws = Jwts.parser()
-          .setSigningKeyResolver(new SigningKeyResolverAdapter() {
-
-            @Override
-            public Key resolveSigningKey(JwsHeader header, Claims claims) {
-              try {
-                byte[] keyBytes = resolveSigningKeyBytes(header, claims);
-                KeyFactory keyFactory = KeyFactory.getInstance(LoginConstants.SIGNATURE_ALGORITHM.getFamilyName());
-                EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(keyBytes);
-                return keyFactory.generatePublic(publicKeySpec);
-              } catch (Exception e) {
-                throw new IllegalArgumentException(e);
-              }
-            }
-
-            @Override
-            public byte[] resolveSigningKeyBytes(JwsHeader header, Claims claims) {
-              try {
-                return keyCache.get(header.getKeyId());
-              } catch (ExecutionException e) {
-                // this should never fail unless the URL is bad this is very very bad
-                // since it means nobody can log in.
-                log.fatal("Invalid URL for login service!!");
-                return new byte[]{};
-              }
-            }
-          })
-          // blow up if the token didn't come from us! This is verified when the
-          // decryption yields non-garbage, and claims with this value were successfully
-          // encrypted by the private key associated with the public key retrieved
-          // from our login service by the loading cache above.
-          .requireIssuer(ISSUER)
-          .parseClaimsJws(token);
-      // This token came from the service that was configured as our login url so now we can trust
-      // it's claim about who the logged in user is. At this point we will now trust the user
-      // until their session expires.
       session.setAttribute(PRINCIPAL, claimsJws.getBody().getSubject());
       session.setAttribute("com.needhamsoftware.nslogin.jwt", token);
       String originalDestination = (String) session.getAttribute(X_LOGIN_RETURN_TO);
@@ -204,9 +175,45 @@ public class JwtAuthenticationFilter implements Filter, LoginConstants {
     }
   }
 
+  private Jws<Claims> checkToken(String token) {
+    return Jwts.parser()
+        .setSigningKeyResolver(new SigningKeyResolverAdapter() {
+
+          @Override
+          public Key resolveSigningKey(JwsHeader header, Claims claims) {
+            try {
+              byte[] keyBytes = resolveSigningKeyBytes(header, claims);
+              KeyFactory keyFactory = KeyFactory.getInstance(LoginConstants.SIGNATURE_ALGORITHM.getFamilyName());
+              EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(keyBytes);
+              return keyFactory.generatePublic(publicKeySpec);
+            } catch (Exception e) {
+              throw new IllegalArgumentException(e);
+            }
+          }
+
+          @Override
+          public byte[] resolveSigningKeyBytes(JwsHeader header, Claims claims) {
+            try {
+              return keyCache.get(header.getKeyId());
+            } catch (ExecutionException e) {
+              // this should never fail unless the URL is bad this is very very bad
+              // since it means nobody can log in.
+              log.fatal("Invalid URL for login service!!");
+              return new byte[]{};
+            }
+          }
+        })
+        // blow up if the token didn't come from us! This is verified when the
+        // decryption yields non-garbage, and claims with this value were thereffore
+        // successfully encrypted by the private key associated with the public key
+        // retrieved from our login service by the loading cache above.
+        .requireIssuer(ISSUER)
+        .parseClaimsJws(token);
+  }
+
   private void errorToLogin(HttpServletResponse resp) throws IOException {
     resp.setHeader(X_ERROR_MESSAGE, ADMINISTRATOR);
-    resp.sendRedirect("/nslogin/");
+    resp.sendRedirect("/login/");
   }
 
 

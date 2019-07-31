@@ -21,8 +21,10 @@
              version="2.1">
 
     <persistence-unit name="app">
-        <description> Hibernate JPA Configuration for Eubalaena Academy</description>
+        <description> Hibernate JPA Configuration</description>
         <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
+        <exclude-unlisted-classes>false</exclude-unlisted-classes>
+
         <properties>
             <property name="javax.persistence.jdbc.driver" value="org.mariadb.jdbc.Driver" />
             <property name="javax.persistence.jdbc.url" value="jdbc:mariadb://localhost:3306/app" />
@@ -31,7 +33,8 @@
             <property name="hibernate.dialect" value="org.hibernate.dialect.MariaDB53Dialect"/>
             <property name="hibernate.show_sql" value="true" />
             <property name="hibernate.archive.autodetection" value="class, hbm"/>
-            <property name="hibernate.hbm2ddl.auto" value="update" />
+            <!-- Uncomment this next line to bootstrap a database auotmaticall -->
+            <!-- <property name="hibernate.hbm2ddl.auto" value="update" /> -->
         </properties>
 
     </persistence-unit>

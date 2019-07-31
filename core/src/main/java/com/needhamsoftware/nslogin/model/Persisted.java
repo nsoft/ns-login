@@ -27,7 +27,7 @@ public class Persisted {
   @Id
   private long id;
   @Version
-  long version;
+  private long version;
   @ManyToOne
   private AppUser createdBy;
   @ManyToOne

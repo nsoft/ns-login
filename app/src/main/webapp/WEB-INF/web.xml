@@ -25,7 +25,7 @@
         <filter-class>com.needhamsoftware.nslogin.servlet.JwtAuthenticationFilter</filter-class>
         <init-param>
             <param-name>keyFetchUrl</param-name>
-            <param-value>http://localhost:8080/nslogin/service?kid=</param-value>
+            <param-value>http://localhost:8080/login/service?kid=</param-value>
         </init-param>
     </filter>
     <filter-mapping>

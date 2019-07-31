@@ -57,10 +57,10 @@ public class LoginServlet extends HttpServlet implements LoginConstants {
 
   private volatile String lastKey;
 
-  private LoadingCache<String, KeyPair> keyCache = CacheBuilder.newBuilder().expireAfterWrite(30, TimeUnit.MINUTES).build(
+  private LoadingCache<String, KeyPair> keyCache = CacheBuilder.newBuilder().expireAfterWrite(LoginConstants.KEY_CHANGE_SECONDS, TimeUnit.SECONDS).build(
       new CacheLoader<>() {
         @Override
-        public KeyPair load(@SuppressWarnings("NullableProblems") String key) {
+        public KeyPair load(String key) {
           // fresh key every 30 min
           lastKey = key;
           KeyPair keyPair = Keys.keyPairFor(LoginConstants.SIGNATURE_ALGORITHM);
@@ -71,10 +71,10 @@ public class LoginServlet extends HttpServlet implements LoginConstants {
   );
 
 
-  private LoadingCache<String, KeyPair> oldKeys = CacheBuilder.newBuilder().expireAfterAccess(2, TimeUnit.HOURS).build(
+  private LoadingCache<String, KeyPair> oldKeys = CacheBuilder.newBuilder().expireAfterWrite(LoginConstants.KEY_EXPIRE_SECONDS, TimeUnit.SECONDS).build(
       new CacheLoader<>() {
         @Override
-        public KeyPair load(@SuppressWarnings("NullableProblems") String key) {
+        public KeyPair load(String key) {
           throw new InvalidCacheLoadException("Public Key for kid=" + key + " not found");
         }
       }
@@ -106,6 +106,8 @@ public class LoginServlet extends HttpServlet implements LoginConstants {
         boolean empty = keyCache.asMap().keySet().isEmpty();
         if (empty) {
           try {
+            // we uses a random UUID to make it very difficult for an attacker to
+            // predict and fish for the current list of keys
             keyCache.get(UUID.randomUUID().toString());
           } catch (ExecutionException e) {
             e.printStackTrace();
