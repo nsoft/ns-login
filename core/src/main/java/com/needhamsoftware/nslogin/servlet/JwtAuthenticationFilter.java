@@ -146,6 +146,13 @@ public class JwtAuthenticationFilter implements Filter, LoginConstants {
         // continue without parameters.
       }
 
+      // without this check the user can get redirected to favicon.ico after logging in!
+      if (returnPath.contains("favicon.ico")) {
+        ((HttpServletResponse) response).setHeader("Cache-Control", "no-store");
+        ((HttpServletResponse) response).sendError(404); // for now just fail, browser can collect it after login
+        return;
+      }
+
       session.setAttribute(X_LOGIN_RETURN_TO, returnPath);
       resp.sendRedirect("/login/?from=" + req.getRequestURL());
       return;
@@ -204,7 +211,7 @@ public class JwtAuthenticationFilter implements Filter, LoginConstants {
           }
         })
         // blow up if the token didn't come from us! This is verified when the
-        // decryption yields non-garbage, and claims with this value were thereffore
+        // decryption yields non-garbage, and claims with this value were therefore
         // successfully encrypted by the private key associated with the public key
         // retrieved from our login service by the loading cache above.
         .requireIssuer(ISSUER)

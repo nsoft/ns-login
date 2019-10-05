@@ -16,14 +16,12 @@
 
 package com.needhamsoftware.nslogin.model;
 
-import javax.persistence.Id;
-import javax.persistence.ManyToOne;
-import javax.persistence.MappedSuperclass;
-import javax.persistence.Version;
+import javax.persistence.*;
 import java.time.Instant;
 
 @MappedSuperclass
 public class Persisted {
+  @GeneratedValue
   @Id
   private long id;
   @Version
@@ -81,5 +79,14 @@ public class Persisted {
 
   public void setModified(Instant modified) {
     this.modified = modified;
+  }
+
+  @PrePersist
+  public void onUpdate() {
+    created = Instant.now();
+  }
+  @PreUpdate
+  public void businessUpdate() {
+    modified = Instant.now();
   }
 }

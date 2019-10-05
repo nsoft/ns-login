@@ -81,7 +81,7 @@ unsuitable (or you have out grown it).
 1. **Application Stub** - a dead simple single html file that is properly
    configured to be protected by the security filter. Just drop your application in
    here and off you go.
-1. **New User App** - (TODO) an entirely separate application that you can direct users to 
+1. **New User App** - an entirely separate application that you can direct users to 
    for creating new accounts. This is designed so all it can do is add a new user
    after having validated that the user controls the email they supplied and that 
    no existing user has the same email. No user record exists until after verification

@@ -1,4 +1,3 @@
-
 <%--
   ~    Copyright (c) 2019, Needham Software LLC
   ~
@@ -70,6 +69,7 @@
         </table>
         <input type="submit"/>
     </form>
+    <div><a href="/newuser/">Create a new account</a> </div>
 </div>
 </body>
 </html>

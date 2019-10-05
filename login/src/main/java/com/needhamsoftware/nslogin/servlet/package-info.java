@@ -51,6 +51,27 @@
  * private key and simply include their OWN public key, which would of course then successfully decrypt the secret
  * that they substituted rendering the whole process useless</strong></p>
  *
+ * <p>Note that in general, secrecy is the job of your SSL (https) connections, so in combination with https, the
+ * contents of the token would only be visible to the current browser session. It is important to keep in mind that
+ * browsers can become compromised by plugins or viruses, or have bugs that leak information so the user you trust may
+ * not be the only one observing the connection, and therefore the contents of the token. While a fully compromised
+ * browser might steal the password directly, it would only do so if the crack was specifically engineered for that
+ * purpose. A potentially larger risk is that other, less malicious (data gathering) plugins or advertising based,
+ * user tracking code might export URLs or other info from the browser and expose the token to a secondary (truly
+ * malicious) attacker at a location outside the browser. This risk is one of the major motivations for having token
+ * encryption key pairs that expire fairly quickly. Key expiration makes the any historical token information useless
+ * to attackers because the public  key becomes unavailable, and the token secret inscrutable forevermore without
+ * directly cracking the encryption algorithm.</p>
+ *
+ * <p>In summary, the way an attacker can see the contents of the token is to obtain the token (somehow) and query the
+ * login servlet (which can never be protected by login of course) to get the public key to before the key identified
+ * by the token header expires (or continuously harvest and store keys). The way the attacker can impersonate the user
+ * is to steal the token and supply it to the system before the key expires. This key expiration obviates the need for
+ * an exp (token expiration) value in the secret, and is superior since it could never be fooled by a forged exp value,
+ * and tokens that last forever can't be created for testing and then stolen or inadvertently leaked. That said, your
+ * release testing should be sure to verify that tokens expire on time and a developer hasn't inadvertently checked
+ * in a convenience configuration with a long expiration period!</p>
+ *
  * Old keys are cached for a period longer than the regeneration time, but not indefinitely, meaning that anyone
  * logging in at the key regen-boundary race condition can still fetch the previous key, but there is only a
  * very short window of time for attackers to attempt reverse-engineer the private key from the public key.

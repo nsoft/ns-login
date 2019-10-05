@@ -16,34 +16,18 @@
 
 package com.needhamsoftware.nslogin.model;
 
-import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.ManyToOne;
 
-// class name to avoid clashes with user keyword in various DB systems.
+// intentionally similar to user, gets converted to a user upon email confirmation.
+// this keeps all the login logic simple, without need to check if the confirmation
+// has occurred for every login.
+@SuppressWarnings("WeakerAccess")
 @Entity
-public class AppUser extends Persisted {
-
-  @Column(unique = true, length = 40)
+public class AccountRequest extends Persisted {
   private String username;
 
-  @Column(unique = true, length = 128)
   private String userEmail;
-
-  @ManyToOne
-  private UserSecurity securityInfo;
-
-  public AppUser() {}
-
-  public AppUser(AccountRequest request) {
-    this.username = request.getUsername();
-    this.userEmail = request.getUserEmail();
-    this.securityInfo = request.getSecurityInfo();
-    securityInfo.setResetToken(null); // extremely important, makes token unusable in future.
-    securityInfo.setExpiration(null);
-    securityInfo.setExpirationReason(null);
-    securityInfo.setResetRequestedAt(null);
-  }
 
   public String getUsername() {
     return username;
@@ -68,4 +52,8 @@ public class AppUser extends Persisted {
   public void setSecurityInfo(UserSecurity securityInfo) {
     this.securityInfo = securityInfo;
   }
+
+  @ManyToOne
+  private UserSecurity securityInfo;
+
 }
