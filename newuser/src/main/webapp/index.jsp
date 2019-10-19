@@ -38,6 +38,9 @@
         </ul>
     </c:otherwise>
 </c:choose>
+<c:set var="newuEmail" value='${requestScope["NEWU_FORM_EMAIL"]}' />
+<c:set var="newuName" value='${requestScope["NEWU_FORM_NAME"]}' />
+
 <div>
     <form action="<c:url value="/request"/>" method="post">
         <table>
@@ -45,12 +48,12 @@
             <tr>
                 <td><label for="newUser">Username</label></td>
                 <td>
-                    <input id="newUser" type="text" name="username">
+                    <input id="newUser" type="text" name="username" value="<c:out value="${newuName}"/>"> - the name others will see
                 </td>
             </tr>
             <tr>
                 <td><label for="newPassword">Password</label></td>
-                <td><input id="newPassword" type="password" name="password"></td>
+                <td><input id="newPassword" type="password" name="password"> - minimum 8 chars, lower, number & other</td>
             </tr>
             <tr>
                 <td><label for="confirmPassword">Confirm Password</label></td>
@@ -58,7 +61,7 @@
             </tr>
             <tr>
                 <td><label for="newEmail">Email Address</label></td>
-                <td><input id="newEmail" type="email" name="email"></td>
+                <td><input id="newEmail" type="email" name="email" value="<c:out value="${newuEmail}"/>"> - your login, and where confirmation email will go</td>
             </tr>
             </tbody>
         </table>

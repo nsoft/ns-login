@@ -32,6 +32,7 @@
             <property name="javax.persistence.jdbc.password" value="secretChangeMe" />
             <property name="hibernate.dialect" value="org.hibernate.dialect.MariaDB53Dialect"/>
             <property name="hibernate.show_sql" value="true" />
+            <property name="hibernate.connection.maxIdleTime" value="60"/>
             <property name="hibernate.archive.autodetection" value="class, hbm"/>
             <!-- Uncomment this next line to bootstrap a database auotmaticall -->
             <!-- <property name="hibernate.hbm2ddl.auto" value="update" /> -->

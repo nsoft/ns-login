@@ -24,7 +24,8 @@ import javax.persistence.ManyToOne;
 @Entity
 public class AppUser extends Persisted {
 
-  @Column(unique = true, length = 40)
+  // making this unique leads to user enumeration vulnerability in the create user page
+  @Column(length = 40)
   private String username;
 
   @Column(unique = true, length = 128)

@@ -53,7 +53,8 @@ import java.util.concurrent.TimeUnit;
 public class LoginServlet extends HttpServlet implements LoginConstants {
 
   private static final Logger log = LogManager.getLogger();
-  private static final String USER_NAME_OR_PASSWORD_INCORRECT = "User name or password incorrect.";
+  private static final String USER_NAME_OR_PASSWORD_INCORRECT = "Email or password incorrect.";
+  private static final String LOGIN_FORM_EMAIL = "LOGIN_FORM_EMAIL";
 
   private volatile String lastKey;
 
@@ -140,18 +141,18 @@ public class LoginServlet extends HttpServlet implements LoginConstants {
       }
 
       // who do they claim to be (extra values will be ignored)
-      String[] uNames = req.getParameterMap().get("username");
+      String[] uEmails = req.getParameterMap().get("email");
       String[] passwords = req.getParameterMap().get("password");
-      if (haveNone(uNames) || haveNone(passwords)) {
+      if (haveNone(uEmails) || haveNone(passwords)) {
         error(req, resp, USER_NAME_OR_PASSWORD_INCORRECT);
         return;
       } else {
-        // Check if we know of such an individual in the database.
-        TypedQuery<AppUser> query = em.createQuery("select u from AppUser u where u.username = :u", AppUser.class);
-        query.setParameter("u", uNames[0]);
+        req.setAttribute(LOGIN_FORM_EMAIL, uEmails[0]);        // Check if we know of such an individual in the database.
+        TypedQuery<AppUser> query = em.createQuery("select u from AppUser u where u.userEmail = :userEmail", AppUser.class);
+        query.setParameter("userEmail", uEmails[0]);
         List<AppUser> resultList = query.getResultList();
         if (resultList.size() > 1) {
-          // multiple users with the same name, we're hosed, flame the dev who wrote that the bug
+          // multiple users with the same email, we're hosed, flame the dev who wrote that the bug
           // that removed the db constraint...
           resp.sendError(500, "Internal server error, Please contact support. Dev=ID1075");
         }

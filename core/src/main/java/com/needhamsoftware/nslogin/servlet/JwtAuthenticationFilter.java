@@ -20,6 +20,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import io.jsonwebtoken.*;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.fluent.Content;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.utils.URIBuilder;
@@ -172,6 +173,9 @@ public class JwtAuthenticationFilter implements Filter, LoginConstants {
       session.setAttribute("com.needhamsoftware.nslogin.jwt", token);
       String originalDestination = (String) session.getAttribute(X_LOGIN_RETURN_TO);
       session.removeAttribute(X_LOGIN_RETURN_TO);
+      if (StringUtils.isBlank(originalDestination)) {
+        originalDestination = "/";
+      }
       resp.sendRedirect(originalDestination); // finally go to the original url with query params restored
       return;
     } catch (IllegalArgumentException | JwtException e) {

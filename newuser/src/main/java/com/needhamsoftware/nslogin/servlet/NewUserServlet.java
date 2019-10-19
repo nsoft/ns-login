@@ -22,7 +22,6 @@ import com.needhamsoftware.nslogin.model.UserSecurity;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.ThreadContext;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
 import org.mindrot.jbcrypt.BCrypt;
@@ -62,6 +61,7 @@ public class NewUserServlet extends HttpServlet implements LoginConstants {
   private String fromAddr = "no-reply@example.com";
   private String subject = "New Account Requested";
   private String returnUrl = "http://localhost:8080/newuser/confirmation?token=";
+  private String loginUrl = "http://localhost:8080/login/";
 
   @Override
   public void init(ServletConfig config) throws ServletException {
@@ -90,6 +90,10 @@ public class NewUserServlet extends HttpServlet implements LoginConstants {
     String returnUrl = getServletContext().getInitParameter("returnUrl");
     if (StringUtils.isNotBlank(from)) {
       this.returnUrl = returnUrl;
+    }
+    String loginUrl = getServletContext().getInitParameter("loginUrl");
+    if (StringUtils.isNotBlank(from)) {
+      this.loginUrl = loginUrl;
     }
   }
 
@@ -124,33 +128,54 @@ public class NewUserServlet extends HttpServlet implements LoginConstants {
         messages.add("Please provide a matching password confirmation");
       }
 
-      if (userNames != null && alreadyExists(userNames[0], em)) {
-        messages.add("Someone already has that username");
-      }
-
-      if (emails != null && isEmailTaken(emails[0], em)) {
-        messages.add("This email is already registered, only one account per email is allowed.");
-      }
+      boolean existingEmail = emails != null && isEmailTaken(emails[0], em);
 
       if (messages.size() > 0) {
+        if (emails != null) {
+          req.setAttribute("NEWU_FORM_EMAIL", emails[0]);
+        }
+        if (userNames != null){
+          req.setAttribute("NEWU_FORM_NAME", userNames[0]);
+        }
         error(req, resp, messages);
       } else {
-        AccountRequest userRequest = new AccountRequest();
-        // any of these nulls would result in a message and we wouldn't get here.
-        assert userNames != null;
-        assert emails != null;
-        assert passwords != null;
-        userRequest.setUsername(userNames[0]);
-        userRequest.setUserEmail(emails[0]);
-        UserSecurity newSecurity = new UserSecurity();
-        userRequest.setSecurityInfo(newSecurity);
-        newSecurity.setPasswordHash(BCrypt.hashpw(passwords[0], BCrypt.gensalt(10)));
-        newSecurity.setResetToken(BCrypt.gensalt());
-        newSecurity.setResetRequestedAt(Instant.now());
-        em.persist(newSecurity);
-        em.persist(userRequest);
-        tx.commit();
 
+        org.apache.velocity.context.Context context = new VelocityContext();
+        String emailBody;
+        if (existingEmail) {
+          context.put("loginUrl", loginUrl);
+          try {
+            emailBody = evalTemplate(context, "existing-email.vsl");
+          }catch (TemplateEvalException e) {
+            error(req, resp, Collections.singletonList("Internal Error: Could not generate email!"));
+            return;
+          }
+        } else {
+          AccountRequest userRequest = new AccountRequest();
+          // any of these nulls would result in a message and we wouldn't get here.
+          assert userNames != null;
+          assert emails != null;
+          assert passwords != null;
+          userRequest.setUsername(userNames[0]);
+          userRequest.setUserEmail(emails[0]);
+          UserSecurity newSecurity = new UserSecurity();
+          userRequest.setSecurityInfo(newSecurity);
+          newSecurity.setPasswordHash(BCrypt.hashpw(passwords[0], BCrypt.gensalt(10)));
+          newSecurity.setResetToken(BCrypt.gensalt());
+          newSecurity.setResetRequestedAt(Instant.now());
+          em.persist(newSecurity);
+          em.persist(userRequest);
+          tx.commit();
+
+          context.put("resetToken", newSecurity.getResetToken());
+          context.put("returnUrl", returnUrl);
+          try {
+            emailBody = evalTemplate(context, "reg-email.vsl");
+          }catch (TemplateEvalException e) {
+            error(req, resp, Collections.singletonList("Internal Error: Could not generate email!"));
+            return;
+          }
+        }
         Message message = new MimeMessage(session);
         try {
           message.setFrom(new InternetAddress(fromAddr));
@@ -161,35 +186,17 @@ public class NewUserServlet extends HttpServlet implements LoginConstants {
         }
         InternetAddress[] to = new InternetAddress[1];
         try {
-          to[0] = new InternetAddress(userRequest.getUserEmail());
+          to[0] = new InternetAddress(emails[0]);
         } catch (AddressException e) {
-          log.debug("bad address for 'to' address in new user email {}", userRequest.getUserEmail());
+          log.debug("bad address for 'to' address in new user email {}", emails[0]);
           error(req, resp, Collections.singletonList("Invalid email address"));
           return;
         }
         try {
+
           message.setRecipients(Message.RecipientType.TO, to);
           message.setSubject(subject);
-
-          VelocityEngine ve = new VelocityEngine();
-          ve.init();
-          org.apache.velocity.context.Context context = new VelocityContext();
-          context.put("returnUrl", returnUrl);
-          context.put("resetToken", newSecurity.getResetToken());
-          StringWriter emailWriter = new StringWriter();
-          InputStream resourceAsStream = Thread.currentThread().getContextClassLoader()
-              .getResourceAsStream("reg-email.vsl");
-          if (resourceAsStream == null) {
-            log.fatal("reg email template not found!");
-            error(req, resp, Collections.singletonList("Internal Error: Could not generate email!"));
-            return;
-          }
-          String template = new String(resourceAsStream.readAllBytes());
-
-          ve.evaluate(context, emailWriter, "foo", template);
-
-          log.trace(emailWriter.toString());
-          message.setContent(emailWriter.toString(), "text/plain");
+          message.setContent(emailBody, "text/plain");
           Transport.send(message);
         } catch (MessagingException e) {
           log.error("FAIL: could not send new user email", e);
@@ -198,9 +205,27 @@ public class NewUserServlet extends HttpServlet implements LoginConstants {
         }
         getServletContext().getRequestDispatcher("/email_sent.jsp").forward(req, resp);
       }
+
     } finally {
       em.close();
     }
+  }
+
+  private String evalTemplate(org.apache.velocity.context.Context context, String templateName) throws IOException, TemplateEvalException {
+    VelocityEngine ve = new VelocityEngine();
+    ve.init();
+    StringWriter emailWriter = new StringWriter();
+    InputStream resourceAsStream = Thread.currentThread().getContextClassLoader()
+        .getResourceAsStream(templateName);
+    if (resourceAsStream == null) {
+      log.fatal("reg email template not found!");
+      throw new TemplateEvalException();
+    }
+    String template = new String(resourceAsStream.readAllBytes());
+
+    ve.evaluate(context, emailWriter, "foo", template);
+
+    return emailWriter.toString();
   }
 
   private boolean isValidEmail(String email) {
@@ -213,9 +238,14 @@ public class NewUserServlet extends HttpServlet implements LoginConstants {
   }
 
   private boolean isEmailTaken(String email, EntityManager em) {
+    return getUserByEmail(email, em) != null;
+  }
+
+  private AppUser getUserByEmail(String email, EntityManager em) {
     TypedQuery<AppUser> query = em.createQuery(
         "SELECT a FROM AppUser a WHERE a.userEmail = :email", AppUser.class);
-    return query.setParameter("email", email).getResultList().size() != 0;
+    List<AppUser> list = query.setParameter("email", email).getResultList();
+    return list.size() == 1 ? list.get(0) : null;
   }
 
   private void error(HttpServletRequest req, HttpServletResponse resp, List<String> errors) throws ServletException, IOException {
@@ -232,14 +262,11 @@ public class NewUserServlet extends HttpServlet implements LoginConstants {
         password.matches(".*\\W.*");
   }
 
-  private boolean alreadyExists(String username, EntityManager em) {
-    TypedQuery<AppUser> query = em.createQuery(
-        "SELECT a FROM AppUser a WHERE a.username = :username", AppUser.class);
-    return query.setParameter("username", username).getResultList().size() != 0;
-  }
-
   private boolean isValidUsername(String username) {
     // implement any rules (like bad words) here
     return username != null;
+  }
+
+  private class TemplateEvalException extends Exception {
   }
 }

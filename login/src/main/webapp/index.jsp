@@ -51,14 +51,15 @@
         </ul>
     </c:otherwise>
 </c:choose>
+<c:set var="loginEmail" value='${requestScope["LOGIN_FORM_EMAIL"]}' />
 <div>
     <form action="<c:url value="/service"/>" method="post">
         <table>
             <tbody>
             <tr>
-                <td><label for="loginUser">Username</label></td>
+                <td><label for="email">Email</label></td>
                 <td>
-                    <input id="loginUser" type="text" name="username">
+                    <input id="email" type="email" name="email" value="<c:out value="${loginEmail}"/> ">
                 </td>
             </tr>
             <tr>
