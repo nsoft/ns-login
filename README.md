@@ -87,7 +87,7 @@ unsuitable (or you have out grown it).
    no existing user has the same email. No user record exists until after verification
    to ensure that there's no chance of your system being fooled by half created
    users.
-1. **Password Reset App** - (TODO) email based password reset with expiring tokens.
+1. **Password Reset App** - email based password reset with expiring tokens.
 1. **REST API stub** - (TODO), serving JSOG encoded object graphs for user objects including not
    exposing sensitive info such as passwords, and properly breaking the chain of created_by
    and modified_by to avoid pulling back long graphs of users based on who created who.

@@ -1,0 +1,7 @@
+#* @vtlvariable name="returnUrl" type="java.lang.String" *#
+#* @vtlvariable name="resetToken" type="java.lang.String" *#
+Someone (hopefully you) has requested to reset the password on your account
+
+Please confirm your request by clicking this link: ${returnUrl}${resetToken}
+
+If you did not make this request you can ignore this email.

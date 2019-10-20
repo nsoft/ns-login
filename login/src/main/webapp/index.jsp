@@ -71,6 +71,7 @@
         <input type="submit"/>
     </form>
     <div><a href="/newuser/">Create a new account</a> </div>
+    <div><a href="/reset/">Reset Password</a> </div>
 </div>
 </body>
 </html>

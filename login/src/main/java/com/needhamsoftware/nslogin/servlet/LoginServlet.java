@@ -71,7 +71,6 @@ public class LoginServlet extends HttpServlet implements LoginConstants {
       }
   );
 
-
   private LoadingCache<String, KeyPair> oldKeys = CacheBuilder.newBuilder().expireAfterWrite(LoginConstants.KEY_EXPIRE_SECONDS, TimeUnit.SECONDS).build(
       new CacheLoader<>() {
         @Override
@@ -81,11 +80,8 @@ public class LoginServlet extends HttpServlet implements LoginConstants {
       }
   );
 
-
   @PersistenceUnit(unitName = "app")
   private EntityManagerFactory emf;
-
-  private EntityManager em;
 
   private Executor ex = Executors.newSingleThreadScheduledExecutor(r -> {
     Thread t = new Thread(r);
@@ -98,10 +94,10 @@ public class LoginServlet extends HttpServlet implements LoginConstants {
     super.init(config);
     // make sure we have a database connection and it doesn't error out.
     emf = Persistence.createEntityManagerFactory("app");
-    em = emf.createEntityManager();
+    EntityManager em = emf.createEntityManager();
     Query query = em.createQuery("select count(*) from AppUser");
     Object singleResult = query.getSingleResult();
-    log.error("FOUND {} user records on startup", singleResult);
+    log.info("FOUND {} user records on startup", singleResult);
     ex.execute(() -> {
       while (true) {
         boolean empty = keyCache.asMap().keySet().isEmpty();
@@ -147,6 +143,7 @@ public class LoginServlet extends HttpServlet implements LoginConstants {
         error(req, resp, USER_NAME_OR_PASSWORD_INCORRECT);
         return;
       } else {
+        EntityManager em = emf.createEntityManager();
         req.setAttribute(LOGIN_FORM_EMAIL, uEmails[0]);        // Check if we know of such an individual in the database.
         TypedQuery<AppUser> query = em.createQuery("select u from AppUser u where u.userEmail = :userEmail", AppUser.class);
         query.setParameter("userEmail", uEmails[0]);
@@ -162,7 +159,10 @@ public class LoginServlet extends HttpServlet implements LoginConstants {
         }
         AppUser user = resultList.get(0);
         String passwordHash = user.getSecurityInfo().getPasswordHash();
-        if (!checkPw(passwords[0], passwordHash)) {
+        if (passwordHash == null || !checkPw(passwords[0], passwordHash)) {
+          if (passwordHash == null) {
+            log.error("User with null for password hash = " + user.getUserEmail());
+          }
           error(req, resp, USER_NAME_OR_PASSWORD_INCORRECT);
           return;
         } else {
@@ -209,7 +209,6 @@ public class LoginServlet extends HttpServlet implements LoginConstants {
           return;
         }
         byte[] encoded = keyPair.getPublic().getEncoded();
-        String debug = new String(encoded);
         resp.getOutputStream().write(encoded);
 
       } catch (ExecutionException e) {
@@ -229,6 +228,7 @@ public class LoginServlet extends HttpServlet implements LoginConstants {
     return BCrypt.checkpw(password, passwordHash);
   }
 
+  @SuppressWarnings("SameParameterValue")
   private void error(HttpServletRequest req, HttpServletResponse resp, String error) throws ServletException, IOException {
     req.setAttribute("ERRORS", Collections.singletonList(error));
     getServletContext().getRequestDispatcher("/index.jsp").forward(req, resp);

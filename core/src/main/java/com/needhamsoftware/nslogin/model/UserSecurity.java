@@ -17,6 +17,7 @@
 package com.needhamsoftware.nslogin.model;
 
 import javax.persistence.Entity;
+import javax.persistence.ManyToOne;
 import java.time.Instant;
 
 @Entity
@@ -27,6 +28,8 @@ public class UserSecurity extends Persisted {
   private Instant resetRequestedAt;
   private Instant expiration;
   private Expiration expirationReason;
+  @ManyToOne
+  private AppUser forUser;
 
   public String getPasswordHash() {
     return passwordHash;
@@ -74,5 +77,13 @@ public class UserSecurity extends Persisted {
 
   public void setExpirationReason(Expiration expirationReason) {
     this.expirationReason = expirationReason;
+  }
+
+  public AppUser getForUser() {
+    return forUser;
+  }
+
+  public void setForUser(AppUser forUser) {
+    this.forUser = forUser;
   }
 }
