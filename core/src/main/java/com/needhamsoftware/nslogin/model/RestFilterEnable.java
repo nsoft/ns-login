@@ -14,11 +14,17 @@
  *    limitations under the License.
  */
 
-rootProject.name = 'ns-login'
-include 'login'
-include 'core'
-include 'app'
-include 'newuser'
-include 'reset'
-include 'rest'
+package com.needhamsoftware.nslogin.model;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+/**
+ * Marks a field as eligible for filtering via parameters sent to the rest API
+ */
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.FIELD)
+public @interface RestFilterEnable {
+}

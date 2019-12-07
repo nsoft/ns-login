@@ -16,21 +16,39 @@
 
 package com.needhamsoftware.nslogin.model;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.voodoodyne.jackson.jsog.JSOGGenerator;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.ManyToOne;
+import java.time.Instant;
 
 // class name to avoid clashes with user keyword in various DB systems.
 @Entity
+@JsonIdentityInfo(generator= JSOGGenerator.class)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class AppUser extends Persisted {
 
+  // NOTE for REST usage: everything but username and id is hidden, because the vast majority of
+  // information about users is potential PII, or security related. Sections of the application
+  // that want to provide views to the user (who should be able to see their info) or provide
+  // administrators with views into additional info should map an additional class for those
+  // use cases providing access to the proper attributes for that use case
+
   // making this unique leads to user enumeration vulnerability in the create user page
+  @RestFilterEnable
   @Column(length = 40)
   private String username;
 
+  @RestFilterEnable
   @Column(unique = true, length = 128)
+  @JsonIgnore // avoid user enumeration attacks
   private String userEmail;
 
+  @JsonIgnore // this should never be shipped to the user.
   @ManyToOne
   private UserSecurity securityInfo;
 
@@ -68,5 +86,48 @@ public class AppUser extends Persisted {
 
   public void setSecurityInfo(UserSecurity securityInfo) {
     this.securityInfo = securityInfo;
+  }
+
+  @Override
+  @JsonIgnore // this should never be shipped to the user.
+  public Long getId() {
+    return super.getId();
+  }
+
+  @Override
+  @JsonIgnore // this should never be shipped to the user.
+  public long getVersion() {
+    return super.getVersion();
+  }
+
+  @JsonIgnore // this should never be shipped to the user.
+  public Instant getPasswordResetRequestedAt() {
+    return securityInfo.getResetRequestedAt();
+  }
+
+  public void setPasswordResetRequestedAt(Instant ignored) {}
+
+  @Override
+  @JsonIgnore // this should never be shipped to the user.
+  public AppUser getCreatedBy() {
+    return super.getCreatedBy();
+  }
+
+  @Override
+  @JsonIgnore // this should never be shipped to the user.
+  public AppUser getModifiedBy() {
+    return super.getModifiedBy();
+  }
+
+  @Override
+  @JsonIgnore // this should never be shipped to the user.
+  public Instant getCreated() {
+    return super.getCreated();
+  }
+
+  @Override
+  @JsonIgnore // this should never be shipped to the user.
+  public Instant getModified() {
+    return super.getModified();
   }
 }

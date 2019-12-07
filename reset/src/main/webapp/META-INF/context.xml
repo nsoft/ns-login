@@ -15,7 +15,34 @@
   -->
 
 <Context>
-  <Resource name="mail/Session" auth="Container"
-            type="javax.mail.Session"
-            mail.smtp.host="localhost"/>
+  <!-- to configure this app to have it's own mail session use this file, but with full
+       login details for your smtp host -->
+
+  <!-- Gmail example below, requires "less secure access" enabled
+
+  <Resource name="mail/Session" auth="Container" type="javax.mail.Session"
+              mail.transport.protocol="smtp"
+              mail.smtp.auth="true"
+              mail.smtp.host="smtp.gmail.com"
+              mail.smtp.port="465"
+              mail.smtp.user="no-reply@example.com"
+              password="s3cret"
+              mail.from="no-reply@example.com"
+              mail.smtp.quitwait="false"
+              mail.smtp.starttls.enable="true"
+              mail.smtp.socketFactory.class="javax.net.ssl.SSLSocketFactory"
+              mail.debug="true"/>
+
+  -->
+
+  <!-- to share a mail session among apps within the container, use Resource Links -->
+
+  <!-- Note: Links are good practice for development because credentials can never
+       get checked in. To enable this place the above resource config in the
+       <GlobalNamingResources> element in server.xml (for Tomcat 8.5)
+  -->
+
+  <ResourceLink name="mail/Session"
+                global="mail/Session"
+                type="javax.mail.Session"/>
 </Context>

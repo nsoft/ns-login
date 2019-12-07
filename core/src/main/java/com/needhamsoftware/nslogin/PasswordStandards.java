@@ -19,16 +19,16 @@ package com.needhamsoftware.nslogin;
 import org.mindrot.jbcrypt.BCrypt;
 
 public class PasswordStandards {
-  public static boolean isValid(String password) {
+  public static boolean isInvalid(String password) {
     // implement any rules (like complexity) here. By default upper/lower/decimal/other required
-    return password.length() >= 8 &&
-        password.matches(".*\\d.*") &&
-        password.matches(".*[A-Z].*") &&
-        password.matches(".*\\w.*") &&
-        password.matches(".*\\W.*");
+    return password.length() < 8 ||
+        !password.matches(".*\\d.*") ||
+        !password.matches(".*[A-Z].*") ||
+        !password.matches(".*\\w.*") ||
+        !password.matches(".*\\W.*");
   }
 
-  public static String getHashpw(String password) {
+  public static String makeHashPw(String password) {
     return BCrypt.hashpw(password, BCrypt.gensalt(10));
   }
 }

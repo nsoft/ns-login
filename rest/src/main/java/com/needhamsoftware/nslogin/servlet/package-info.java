@@ -14,11 +14,7 @@
  *    limitations under the License.
  */
 
-rootProject.name = 'ns-login'
-include 'login'
-include 'core'
-include 'app'
-include 'newuser'
-include 'reset'
-include 'rest'
-
+/**
+ * A servlet to handle REST access to database mapped model objects
+ */
+package com.needhamsoftware.nslogin.servlet;

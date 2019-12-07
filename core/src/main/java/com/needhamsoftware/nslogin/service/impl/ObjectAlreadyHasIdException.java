@@ -14,11 +14,10 @@
  *    limitations under the License.
  */
 
-rootProject.name = 'ns-login'
-include 'login'
-include 'core'
-include 'app'
-include 'newuser'
-include 'reset'
-include 'rest'
+package com.needhamsoftware.nslogin.service.impl;
 
+public class ObjectAlreadyHasIdException extends Exception {
+  ObjectAlreadyHasIdException(String s) {
+    super(s);
+  }
+}

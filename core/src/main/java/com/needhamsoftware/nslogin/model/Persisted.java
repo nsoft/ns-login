@@ -23,7 +23,7 @@ import java.time.Instant;
 public class Persisted {
   @GeneratedValue
   @Id
-  private long id;
+  private Long id;
   @Version
   private long version;
   @ManyToOne
@@ -33,11 +33,12 @@ public class Persisted {
   private Instant created;
   private Instant modified;
 
-  public long getId() {
+
+  public Long getId() {
     return id;
   }
 
-  public void setId(long id) {
+  public void setId(Long id) {
     this.id = id;
   }
 

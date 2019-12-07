@@ -60,7 +60,7 @@ public class ChangePassword extends HttpServlet implements LoginConstants {
 
       List<String> messages = new ArrayList<>();
 
-      if (passwords == null || passwords.length != 1 || !PasswordStandards.isValid(passwords[0])) {
+      if (passwords == null || passwords.length != 1 || PasswordStandards.isInvalid(passwords[0])) {
         messages.add("Please provide a valid password. One each of uppercase, " +
             "lowercase, number and one other character are required with a length of at least 8");
       }
@@ -96,7 +96,7 @@ public class ChangePassword extends HttpServlet implements LoginConstants {
         tx.begin();
         AppUser user = request.getForUser();
         request.setResetToken(null);
-        request.setPasswordHash(PasswordStandards.getHashpw(passwords[0]));
+        request.setPasswordHash(PasswordStandards.makeHashPw(passwords[0]));
         user.setSecurityInfo(request);
         em.merge(user);
         tx.commit();

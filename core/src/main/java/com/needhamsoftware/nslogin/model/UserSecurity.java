@@ -16,11 +16,17 @@
 
 package com.needhamsoftware.nslogin.model;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.voodoodyne.jackson.jsog.JSOGGenerator;
+
 import javax.persistence.Entity;
 import javax.persistence.ManyToOne;
 import java.time.Instant;
 
 @Entity
+@JsonIdentityInfo(generator= JSOGGenerator.class)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class UserSecurity extends Persisted {
   private String passwordHash;
   private String salt;

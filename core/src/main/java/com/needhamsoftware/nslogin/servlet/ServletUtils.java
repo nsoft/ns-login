@@ -14,11 +14,22 @@
  *    limitations under the License.
  */
 
-rootProject.name = 'ns-login'
-include 'login'
-include 'core'
-include 'app'
-include 'newuser'
-include 'reset'
-include 'rest'
+package com.needhamsoftware.nslogin.servlet;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+
+public class ServletUtils {
+  public void handleError(HttpServletResponse resp, int code, ObjectMapper mapper) throws IOException {
+    resp.setStatus(code);
+    RestResponse response = new RestResponse();
+    response.setMessages(Messages.DO.getErrorMessages());
+    resp.setContentType("application/json");
+    ServletOutputStream out = resp.getOutputStream();
+    mapper.writeValue(out, response);
+  }
+
+}

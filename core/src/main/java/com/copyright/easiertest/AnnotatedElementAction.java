@@ -14,11 +14,26 @@
  *    limitations under the License.
  */
 
-rootProject.name = 'ns-login'
-include 'login'
-include 'core'
-include 'app'
-include 'newuser'
-include 'reset'
-include 'rest'
+package com.copyright.easiertest;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+
+/**
+ * Represents something to be done to either a field or method based on the
+ * annotation applied to that field.
+ *
+ * @author gheck
+ */
+@SuppressWarnings("WeakerAccess")
+public class AnnotatedElementAction {
+
+    public void doTo(Field f, Annotation a) {
+        // default do nothing implementation
+    }
+
+    public void doTo(Method m, Annotation a) {
+        // default do nothing implementation
+    }
+}

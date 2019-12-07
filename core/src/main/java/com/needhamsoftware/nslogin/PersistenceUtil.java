@@ -14,11 +14,12 @@
  *    limitations under the License.
  */
 
-rootProject.name = 'ns-login'
-include 'login'
-include 'core'
-include 'app'
-include 'newuser'
-include 'reset'
-include 'rest'
+package com.needhamsoftware.nslogin;/*
+ * Created with IntelliJ IDEA.
+ * User: gus
+ * Date: 10/23/16
+ */
 
+public interface PersistenceUtil {
+  <T> T initializeAndUnproxy(T entity);
+}

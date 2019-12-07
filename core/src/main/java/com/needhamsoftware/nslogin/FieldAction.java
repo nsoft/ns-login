@@ -14,11 +14,15 @@
  *    limitations under the License.
  */
 
-rootProject.name = 'ns-login'
-include 'login'
-include 'core'
-include 'app'
-include 'newuser'
-include 'reset'
-include 'rest'
+package com.needhamsoftware.nslogin;
 
+import java.lang.reflect.Field;
+
+/*
+ * Created with IntelliJ IDEA.
+ * User: gus
+ * Date: 9/24/15
+ */
+public interface FieldAction {
+  void doTo(Field f, Object o);
+}

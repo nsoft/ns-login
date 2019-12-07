@@ -14,11 +14,22 @@
  *    limitations under the License.
  */
 
-rootProject.name = 'ns-login'
-include 'login'
-include 'core'
-include 'app'
-include 'newuser'
-include 'reset'
-include 'rest'
+package com.needhamsoftware.nslogin.servlet;
 
+import com.needhamsoftware.nslogin.model.AppUser;
+import com.needhamsoftware.nslogin.service.ObjectService;
+
+import javax.inject.Inject;
+import javax.servlet.http.HttpServletRequest;
+
+public class ServletBase extends javax.servlet.http.HttpServlet {
+  @Inject
+  protected ObjectService objectService;
+
+  AppUser getSiteUser(HttpServletRequest req) throws NumberFormatException {
+    String userId = req.getParameter("user");
+    Long identifier;
+    identifier = Long.valueOf(userId);
+    return objectService.get(AppUser.class, identifier);
+  }
+}

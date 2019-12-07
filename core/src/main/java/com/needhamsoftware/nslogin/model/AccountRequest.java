@@ -16,6 +16,10 @@
 
 package com.needhamsoftware.nslogin.model;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.voodoodyne.jackson.jsog.JSOGGenerator;
+
 import javax.persistence.Entity;
 import javax.persistence.ManyToOne;
 
@@ -24,6 +28,8 @@ import javax.persistence.ManyToOne;
 // has occurred for every login.
 @SuppressWarnings("WeakerAccess")
 @Entity
+@JsonIdentityInfo(generator= JSOGGenerator.class)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class AccountRequest extends Persisted {
   private String username;
 
