@@ -16,10 +16,8 @@
 
 package com.needhamsoftware.nslogin.servlet;
 
-import com.google.inject.Guice;
-import com.google.inject.Inject;
-import com.google.inject.Injector;
-import com.google.inject.TypeLiteral;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.inject.*;
 import com.google.inject.matcher.AbstractMatcher;
 import com.google.inject.persist.PersistService;
 import com.google.inject.persist.jpa.JpaPersistModule;
@@ -114,6 +112,10 @@ public class GuiceContextListener extends GuiceServletContextListener {
               bind(ObjectService.class).to(ObjectServiceWrapper.class);
               bind(MessageService.class).to(MessageServiceImpl.class);
 
+              ObjectMapper mapper = new ObjectMapper();
+              mapper.findAndRegisterModules();
+              bind(ObjectMapper.class).toProvider(() -> mapper);
+
               // do our static injections before we serve up any requests
               requestStaticInjection(GuiceContextListener.class);
               requestStaticInjection(Messages.class);
@@ -140,7 +142,6 @@ public class GuiceContextListener extends GuiceServletContextListener {
               }, persistServiceListener);
 
               serve("/*").with(RestServlet.class);
-
 
               serve("/messages/*").with(PendingNotificationsServlet.class);
 

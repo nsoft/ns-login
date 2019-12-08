@@ -195,7 +195,7 @@ public class ObjectServiceImpl implements ObjectService {
     }
     EntityManager entityManager = entityManagerProvider.get();
     AppUser actor;
-    actor = SYSTEM_USER;
+    actor = SYSTEM_USER; // todo: once we have authz put the real user here.
     log.debug("{} created by {}", persisted.getClass().getName(), actor);
     Instant now = Instant.now();
     persisted.setCreated(now);
@@ -213,7 +213,6 @@ public class ObjectServiceImpl implements ObjectService {
     EntityManager entityManager = entityManagerProvider.get();
     //TODO: guard against sub-object user edits creation
 
-    // collections and fields that are ignored during JSON
     // collections and fields that are ignored during JSON
     AnnotationUtil.doToAnnotatedElement(persistMe, new AnnotatedElementAction() {
       Persisted parent;

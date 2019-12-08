@@ -53,7 +53,10 @@ public class RestServlet extends javax.servlet.http.HttpServlet {
       Persisted p;
       try {
         p = (Persisted) mapper.readValue(req.getInputStream(), Class.forName(ref.getType().getCanonicalName()));
-        p.setId(ref.getId());
+        Long id = ref.getId();
+        if (id != null) {
+          p.setId(id);
+        }
         if (p instanceof Validatable && !((Validatable)p).isValidated()) {
           ((Validatable) p).validate();
         }
