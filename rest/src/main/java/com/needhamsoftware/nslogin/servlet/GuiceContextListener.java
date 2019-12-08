@@ -29,11 +29,11 @@ import com.google.inject.spi.InjectionListener;
 import com.google.inject.spi.TypeEncounter;
 import com.google.inject.spi.TypeListener;
 import com.needhamsoftware.nslogin.PersistenceUtil;
+import com.needhamsoftware.nslogin.guice.ObjectServiceWrapper;
 import com.needhamsoftware.nslogin.hibernate.HibernateUtil;
 import com.needhamsoftware.nslogin.service.MessageService;
 import com.needhamsoftware.nslogin.service.ObjectService;
 import com.needhamsoftware.nslogin.service.impl.MessageServiceImpl;
-import com.needhamsoftware.nslogin.service.impl.ObjectServiceImpl;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -67,7 +67,7 @@ public class GuiceContextListener extends GuiceServletContextListener {
   @Override
   public void contextInitialized(ServletContextEvent servletContextEvent) {
     super.contextInitialized(servletContextEvent);
-    ((ObjectServiceImpl)objectService).loadSystemUser();
+    objectService.loadSystemUser();
   }
 
   @SuppressWarnings("unchecked")
@@ -111,7 +111,7 @@ public class GuiceContextListener extends GuiceServletContextListener {
             @Override
             protected void configureServlets() {
               bind(PersistenceUtil.class).to(HibernateUtil.class);
-              bind(ObjectService.class).to(ObjectServiceImpl.class);
+              bind(ObjectService.class).to(ObjectServiceWrapper.class);
               bind(MessageService.class).to(MessageServiceImpl.class);
 
               // do our static injections before we serve up any requests

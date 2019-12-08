@@ -24,6 +24,8 @@ import java.util.List;
 @SuppressWarnings("SameParameterValue")
 public interface ObjectService {
 
+    void loadSystemUser();
+
     <T extends Persisted> T get(Class<T> clazz, Long identifier);
 
     Persisted getFresh(Class<? extends Persisted> clazz, Long identifier, boolean privileged);

@@ -52,6 +52,7 @@ public class ObjectServiceImpl implements ObjectService {
   private Provider<EntityManager> entityManagerProvider;
   private AppUser SYSTEM_USER;
 
+  @Override
   public void loadSystemUser() {
     EntityManager entityManager = entityManagerProvider.get();
 
