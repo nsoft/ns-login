@@ -88,11 +88,6 @@ public class AppUser extends Persisted {
     this.securityInfo = securityInfo;
   }
 
-  @Override
-  @JsonIgnore // this should never be shipped to the user.
-  public Long getId() {
-    return super.getId();
-  }
 
   @Override
   @JsonIgnore // this should never be shipped to the user.

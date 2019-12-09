@@ -17,7 +17,10 @@
 package com.needhamsoftware.nslogin.servlet;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.inject.*;
+import com.google.inject.Guice;
+import com.google.inject.Inject;
+import com.google.inject.Injector;
+import com.google.inject.TypeLiteral;
 import com.google.inject.matcher.AbstractMatcher;
 import com.google.inject.persist.PersistService;
 import com.google.inject.persist.jpa.JpaPersistModule;
@@ -141,14 +144,14 @@ public class GuiceContextListener extends GuiceServletContextListener {
                 }
               }, persistServiceListener);
 
-              serve("/*").with(RestServlet.class);
+              serve("/api/*").with(RestServlet.class);
 
               serve("/messages/*").with(PendingNotificationsServlet.class);
 
               filter("/*").through(PersistFilter.class);
               filter("/*").through(UserFilter.class);
               filter("/*").through(MessageCollectionFilter.class);
-              filter("/msocket/*").through(WebSocketFilter.class);
+              filter("/socket/*").through(WebSocketFilter.class);
             }
 
           });

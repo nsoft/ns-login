@@ -76,15 +76,6 @@ public interface MessageService {
    */
   List<Notification> getErrorMessages();
 
-  /**
-   * Send a recommendation to the user. Recommendations suggest an action to the user but do not relate to any
-   * prior requested operation.
-   *
-   * @param recommendation The notification representing the recommendation to send
-   * @return true if the calling code can expect the user to have received the message, false if the message may
-   *              not have been delivered to the user.
-   */
-  boolean sendRecommendation(Notification recommendation);
 
   /**
    * Inspect the supplied notification and send it as per it's type.
@@ -103,8 +94,6 @@ public interface MessageService {
         return sendSuccess(notification.getMessage());
       case INFO:
         return sendSuccess(notification.getMessage());
-      case RECOMMENDATION:
-        return sendRecommendation(notification);
     }
     return false;
   }

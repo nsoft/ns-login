@@ -19,8 +19,8 @@ package com.needhamsoftware.nslogin.model;
 /**
  * The different types of notifications. Not all notifications types are likely to be displayed in a single
  * location. For example a table that allows in-cell edits will likely have a region for displaying
- * error, warning and success messages, but not info or recommendations. Pages may have a butter-bar for
- * info and recommendation messages, but not error/warning/success. A game with a HUD however might consume
+ * error, warning and success messages, but not info. Pages may have a butter-bar for
+ * info messages, but not error/warning/success. A game with a HUD however might consume
  * all types in one location.
  */
 public enum NotificationType {
@@ -28,5 +28,4 @@ public enum NotificationType {
   WARNING,            // things that were unexpected or indicate a condition the user needs to know about urgently
   SUCCESS,            // affirmative success message
   INFO,               // non-urgent informational message (system maintenance announcement, etc)
-  RECOMMENDATION,     // helpful suggestions to improve user experience/utilization of the system
 }

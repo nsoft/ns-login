@@ -19,3 +19,24 @@ dependencies {
 war {
     setArchiveFileName 'ROOT.war'
 }
+
+jsass {
+    indent = "  "
+    linefeed = System.lineSeparator()
+    omitSourceMapUrl = false
+    outputStyle = io.bit3.jsass.OutputStyle.EXPANDED
+    precision = 8
+    sourceComments = false
+    sourceMapContents = false
+    sourceMapEmbed = false
+    sourceMapEnabled = true
+}
+
+task copyCompiledScss(type: Copy) {
+    from compileWebappSass
+    into 'build/libs/exploded/ROOT.war'
+}
+
+war.dependsOn compileWebappSass
+war.dependsOn copyCompiledScss
+copyCompiledScss.shouldRunAfter compileWebappSass

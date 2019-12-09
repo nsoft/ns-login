@@ -20,13 +20,10 @@ package com.needhamsoftware.nslogin.servlet;
 import com.needhamsoftware.nslogin.model.Notification;
 import com.needhamsoftware.nslogin.service.MessageService;
 import com.needhamsoftware.nslogin.service.ObjectService;
-import com.needhamsoftware.nslogin.service.impl.ObjectAlreadyHasIdException;
-import com.needhamsoftware.nslogin.websocket.NotificationSocket;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
-import java.time.Instant;
 import java.util.List;
 
 /**
@@ -46,11 +43,6 @@ public class Messages implements MessageService {
   private static MessageService preNotificationService;
   @Inject
   private static ObjectService objectService;
-
-
-  private MessageService preNotificationService0;
-
-  private ObjectService objectService0;
 
   private static final ThreadLocal<MessageService> service = new ThreadLocal<>();
 
@@ -76,11 +68,11 @@ public class Messages implements MessageService {
     }
   }
 
-  public static void supplyWebMessageService(MessageService webMessageService) {
+  static void supplyWebMessageService(MessageService webMessageService) {
     service.set(webMessageService);
   }
 
-  public static void clearWebMessageService() {
+  static void clearWebMessageService() {
     MessageService messageService = service.get();
     if (messageService != null) {
       messageService.clearRequestMessages();
@@ -109,46 +101,6 @@ public class Messages implements MessageService {
     return getMessageService().sendInfoMessage(info);
   }
 
-  @Override
-  public boolean sendRecommendation(Notification recommendation) {
-    try {
-      if (recommendation.getId() == null) {
-        log.trace("created new recommendation");
-        objectService.insert(recommendation);
-      }
-    } catch (ObjectAlreadyHasIdException e) {
-      // can't happen, but we have to check...
-    }
-    MessageService messageService = getMessageService();
-    MessageService messageSocket = null;
-    if (recommendation.getRecipient() != null) {
-      NotificationSocket notificationSocket = NotificationSocket.ENDPOINTS_BY_USER_ID
-          .get(recommendation.getRecipient().getId());
-      if (notificationSocket != null) {
-        log.trace("found socket for {}", recommendation.getRecipient().getId());
-        messageSocket = notificationSocket;
-      }
-    }
-    try { // we may in some cases retain a stale socket...
-      return doSend(recommendation, messageSocket);
-    } catch (IllegalStateException e) {
-      // socket was stale, remove it and persist the notification to be shown at a later date.
-      NotificationSocket.ENDPOINTS_BY_USER_ID.remove(recommendation.getRecipient().getId());
-      return doSend(recommendation, messageService);
-    }
-  }
-
-  private boolean doSend(Notification recommendation, MessageService messageSocket) {
-    if (messageSocket != null && messageSocket.sendRecommendation(recommendation)) {
-      log.trace("recommendation sent");
-      recommendation.setSent(Instant.now());
-      objectService.update(recommendation);
-      return true;
-    } else {
-      log.trace("recommendation not sent");
-      return false;
-    }
-  }
 
 
   public boolean sendSuccess(String success) {

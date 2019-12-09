@@ -26,6 +26,8 @@
   /** @namespace decoded.results */
   /** @namespace response.messages */
   /** @namespace notification.displayMs */
+  /** @namespace CONTEXT */
+  /** @namespace JSOG */
 
   const MODELS = {};
   const INDEXES = {};
@@ -38,6 +40,7 @@
     'default': function () {
     }
   };
+  const ENDPOINT = CONTEXT + "rest/api/";
 
   function displayErrorMessage(message, clear) {
     let __ret = prepareMessages(clear);
@@ -48,7 +51,37 @@
     $messages.addClass('error')
   }
 
-  function displayMessage($templateMsg, message, $ul, type, link, onClickFn) {
+    /**
+     * Display a message to the user. This function presumes the following:
+     *
+     * 1. $templateMsg is a jquery reference to all locations that should be
+     *    updated with the message (most uscases this is a single element)
+     * 2. $templateMsg contains a span with a css class of ns-message-text
+     *    into which the text of the message should go and a span with
+     *    css class of ns-message-icon
+     * 3. existing css for alert-danger, alert-warning, alert-success, alert-info
+     *    classes to style the list items
+     * 4. existing css for icon-message-danger, icon-message-warning,
+     *    icon-message-success, icon-message-info classes to style a
+     *    button element to display an icon indicating the alert type
+     *    i.e (X), (!) (?) (i)
+     * 5. Default styling is for alert-danger & icon-message-danger
+     *
+     * If the notification has a link attribute, the entire message will be
+     * a hyperlink to that url, and if the notification has an onClickFn
+     * attribute that value will be looked up in NOTIFICATION_ON_CLICK and
+     * bound to the message's click handler.
+     *
+     * @param $templateMsg
+     * @param message a Notification object
+     * @param $ul the unordered list used to display the notification (existing elements are not cleared)
+     * @param type one of SUCCESS INFO WARNING or ERROR (as string)
+     * @param link if the message should be a link, this should contain a URI to link to.
+     * @param onClickFn The name of a function to run when the message is clicked
+     * @param fadeAfter the number of milliseconds after which the notification should fade out (undefined=never)
+     * @returns {*|jQuery}
+     */
+  function displayMessage($templateMsg, message, $ul, type, link, onClickFn, fadeAfter) {
     let notification = {};
     if (typeof message !== 'string') {
       notification = message;
@@ -67,62 +100,54 @@
     } else {
       $msgSpan.text(message);
     }
-    let $icon = $msg.find('span.pficon-error-circle-o');
-    switch (type) {
+    let $icon = $msg.find('span.ns-message-icon');
+
+      function handleFade() {
+        if (fadeAfter && typeof fadeAfter === 'number') {
+          $msg.delay(notification.displayMs || fadeAfter).fadeOut(2000, function () {
+            $msg.remove()
+          });
+        }
+      }
+
+      function clearAlertClasses() {
+        // typically only the danger classes would be here, but just in case...
+        $msg.removeClass('alert-danger');
+        $msg.removeClass('alert-warning');
+        $msg.removeClass('alert-success');
+        $msg.removeClass('alert-info');
+        $icon.removeClass('icon-message-danger');
+        $icon.removeClass('icon-message-warning');
+        $icon.removeClass('icon-message-success');
+        $icon.removeClass('icon-message-info')
+      }
+
+      switch (type) {
       case "ERROR"  : {
         // the default state of the template is error & errors remain visible until cleared.
         break;
       }
       case "WARNING"  : {
-        $msg.removeClass('alert-danger');
+        clearAlertClasses();
         $msg.addClass('alert-warning');
-        $icon.removeClass('pficon-error-circle-o');
-        $icon.addClass('fa');
-        $icon.addClass('fa-circle');
-        // $icon.addClass('pficon-warning-triangle-o');
-        $msg.delay(notification.displayMs || 8000).fadeOut(2000, function () {
-          $msg.remove()
-        });
+        $icon.addClass('icon-message-warning');
+        handleFade();
         break;
       }
       case "INFO"  : {
-        $msg.removeClass('alert-danger');
+        clearAlertClasses();
         $msg.addClass('alert-info');
-        $icon.removeClass('pficon-error-circle-o');
-        $icon.addClass('fa');
-        $icon.addClass('fa-circle');
+        $icon.addClass('icon-message-info');
         // $icon.addClass('pficon-info');
-        $msg.delay(notification.displayMs || 30000).fadeOut(2000, function () {
-          $msg.remove()
-        });
+        handleFade();
 
         break;
       }
       case "SUCCESS"  : {
-        $msg.removeClass('alert-danger');
-        $msg.addClass('alert-success');
-        $icon.removeClass('pficon-error-circle-o');
-        $icon.addClass('fa');
-        $icon.addClass('fa-circle');
-        // $icon.addClass('pficon-ok');
-        // $msg.delay(notification.displayMs || 8000).fadeOut(2000, function () {
-        //   $msg.remove()
-        // });
-        break;
-      }
-      case "RECOMMENDATION"  : {
-        $msg.removeClass('alert-danger');
-        $msg.addClass('alert-recommend');
-        $msg.addClass('sc-recommendation');
-        $icon.removeClass('pficon-error-circle-o');
-        $icon.addClass('fa');
-        $icon.addClass('fa-circle');
-        // by default do not remove recommendations.
-        if (notification.displayMs) {
-          $msg.delay(notification.displayMs).fadeOut(2000, function () {
-            $msg.remove();
-          })
-        }
+        clearAlertClasses();
+        $msg.addClass('alert-warning');
+        $icon.addClass('icon-message-warning');
+        handleFade();
         break;
       }
     }
@@ -132,7 +157,7 @@
       $msg.find(".ns-message-text").wrap($link)
     }
     $msg.removeClass('hidden-template');
-    $ul.prepend($msg);
+    $ul.first().after($msg); // don't displace the template
     return $msg;
   }
 
@@ -186,13 +211,12 @@
     let method = this.getAttribute("data-method");
     let action = this.getAttribute("data-action");
     let id = this.getAttribute("data-id");
-    let next = this.getAttribute("data-next") || "dashboard";
     let body;
     let form = this;
     if (method === "PUT" || method === "POST") {
       let preExec;
       //noinspection JSUnresolvedVariable
-      let actionObj = NS_ACTION.getAction(action);
+      let actionObj = NS_ACTION.getAction(action); // (future feature)
       if (actionObj && actionObj.preExecute) {
         preExec = actionObj.preExecute
       }
@@ -208,12 +232,11 @@
     if (action) {
       options.headers = {"X-Site-Action": action}
     }
-    let url = CONTEXT + 'rest/' + type + (id ? '/' + id : '');
+    let url = ENDPOINT + type + (id ? '/' + id : '');
     prepareMessages(true);
     //noinspection JSUnresolvedFunction
     $.ajax(ensureNoBackRefs(url), options).done(function (response) {
       updateMessages(response, true);
-      HashTagNavigation.show(next);
       refreshDataOnPage(form)
     }).fail(ajaxFail);
     return false;
@@ -263,7 +286,7 @@
       let $elem = $(elem);
       let type = $elem.attr("data-type");
       let id = $elem.attr("data-id");
-      let url = CONTEXT + "rest/" + type + ((id && /\d+/.test(id)) ? '/' + id : '');
+      let url = ENDPOINT + type + ((id && /\d+/.test(id)) ? '/' + id : '');
       //noinspection JSUnresolvedFunction
       $.get(ensureNoBackRefs(url))
           .done(function (data) {
@@ -398,7 +421,8 @@
     filtersSpec.rows = 10000;
     filtersSpec.start = 0;
     //noinspection JSUnresolvedFunction
-    let url = CONTEXT + "rest/" + type;
+
+    let url = ENDPOINT + type;
     //noinspection JSUnresolvedFunction
     $.ajax(ensureNoBackRefs(url), {
       contentType: "application/json",
@@ -430,8 +454,6 @@
               }
             }
           }
-          $(select).chosen({width: "100%"});
-          $(select).trigger("chosen:updated");
           POST_RENDER[postRender]();
         })
       }
@@ -456,7 +478,7 @@
     filtersSpec.rows = 10000;
     filtersSpec.start = 0;
     //noinspection JSUnresolvedFunction
-    let url = CONTEXT + "rest/" + type;
+    let url = ENDPOINT + type;
     //noinspection JSUnresolvedFunction
     $.ajax(ensureNoBackRefs(url), {
       contentType: "application/json",
@@ -493,8 +515,8 @@
             }
             let action = td.getAttribute("data-action");
             //noinspection JSUnresolvedVariable
-            action = NS_ACTION.getAction(action);
             if (action) {
+              action = NS_ACTION.getAction(action); // TODO finish action support (this will fail right now)
               $(td).on("click", function () {
                 action.execute(td, function () {
                   refreshDataOnPage(table);
@@ -535,7 +557,7 @@
   //noinspection JSUnusedLocalSymbols
   function ajaxFail(jqXHR, statusMsg) {
     if (jqXHR.status === 401) {
-      window.location.href = new URI().path(CONTEXT).toString();  // not replace to avoid killing back button history.
+      window.location.href = new URI().path(ENDPOINT).toString();  // not replace to avoid killing back button history.
     } else {
       let response = REST.parse(jqXHR.responseText);
       updateMessages(response);
@@ -548,6 +570,25 @@
   //}
   //
 
+    /**
+     * Make a rest request to locate objects matching a filter & sort.
+     *
+     * Filter format is:
+     *  <property> <operator> <value>
+     *      <property> must match the name of a propety on the object to be filtered (java beans naming conventions)
+     *      <operator> may be one of =,<,>,<=,>=,!=
+     *      <value> should be surrounded by single quotes unless it can be guaranteed to always match \w+
+     *
+     * Sort format is:
+     *  <property> (asc|desc)
+     *
+     * @param type The object type
+     * @param filters filter expression as noted above
+     * @param callback what to do with the objects found
+     * @param rows the maxinum number of objects to retrh, (default=10)
+     * @param start the number of object to skip over (for paging)
+     * @param sort a sort spec as noted above
+     */
   function find(type, filters, callback, rows, start, sort) {
     let filtersSpec = parseFilters(filters);
     filtersSpec.rows = rows ? rows : '10';
@@ -558,7 +599,7 @@
 
     //noinspection JSUnresolvedFunction
     $.ajax({
-      url: CONTEXT + 'rest/' + type,
+      url: ENDPOINT + type,
       method: 'GET',
       dataType: 'json',
       data: filtersSpec
@@ -584,7 +625,7 @@
 
     //noinspection JSUnresolvedFunction
     let options = {
-      url: CONTEXT + 'rest/' + type + ( id ? '/' + id : ''),
+      url: ENDPOINT + type + ( id ? '/' + id : ''),
       method: 'GET',
       dataType: 'json',
       data: filtersSpec
@@ -669,7 +710,7 @@
   function update(type, object, callback, action) {
     //noinspection JSUnresolvedFunction
     $.ajax({
-      url: CONTEXT + "rest/" + type + "/" + object.id,
+      url: ENDPOINT + type + "/" + object.id,
       method: "POST",
       headers: {"X-Site-Action": action},
       data: JSOG.stringify(object),
@@ -681,26 +722,16 @@
     }).fail(ajaxFail)
   }
 
-  // set up the hash change event
   jQuery(document).ready(function () {
     let $forms = $("form[data-method]");
     $forms.on("submit", submitForm);
-    $("table[data-type]").each(function () {
-      this.loader = populateTable;
-    });
-    $("select[data-type]").each(function () {
-      this.loader = populateSelect;
-    });
+    REST.refreshPage($(".home-page")[0].firstChild)
   });
 
   const NOTIFICATION_ON_CLICK = {
-    'jira_feedback': function (evt) {
+    'foo': function (evt) {
       evt.preventDefault();
-      $('#atlwdg-trigger')[0].dispatchEvent(new MouseEvent('click', {
-        'view': window,
-        'bubbles': true,
-        'cancelable': false
-      }));
+      // do something
       return false;
     }
   };

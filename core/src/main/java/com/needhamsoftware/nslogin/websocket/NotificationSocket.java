@@ -32,6 +32,7 @@ import javax.websocket.server.HandshakeRequest;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 import java.io.Serializable;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -94,8 +95,17 @@ public class NotificationSocket implements MessageService {
   @OnMessage
   public String onMessage(String message) {
     log.debug("Message Received: {}", this.getClass());
-
-    return "{ \"response\": \"This is a push only service. Your message has been ignored.\" }";
+    Notification notification = new Notification();
+    notification.setDisplayMs(5000);
+    notification.setMessage("This is a push only service. Your message has been ignored.");
+    notification.setSent(Instant.now());
+    notification.setNotificationType(NotificationType.WARNING);
+    try {
+      return MAPPER.writeValueAsString(notification);
+    } catch (JsonProcessingException e) {
+      e.printStackTrace();
+      return e.getMessage();
+    }
   }
 
   public synchronized boolean send(Notification notification) {
@@ -177,11 +187,6 @@ public class NotificationSocket implements MessageService {
   @Override
   public List<Notification> getErrorMessages() {
     return messages.get();
-  }
-
-  @Override
-  public boolean sendRecommendation(Notification recommendation) {
-    return send(recommendation);
   }
 
   public static class GetHttpSessionConfigurator extends ServerEndpointConfig.Configurator {

@@ -19,7 +19,6 @@ package com.needhamsoftware.nslogin.servlet;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.needhamsoftware.nslogin.model.AppUser;
 import com.needhamsoftware.nslogin.model.Notification;
-import com.needhamsoftware.nslogin.model.NotificationType;
 import com.needhamsoftware.nslogin.service.Filter;
 import com.needhamsoftware.nslogin.service.ObjectService;
 import org.apache.logging.log4j.LogManager;
@@ -45,7 +44,6 @@ public class PendingNotificationsServlet extends ServletBase {
   private static final Field recipient;
   private static final Field acknowledged;
   private static final ObjectPropertyFilter NEVER_SENT;
-  private static final ObjectPropertyFilter IS_REC;
   private static final ObjectPropertyFilter IS_NOT_ACK;
 
 
@@ -59,7 +57,6 @@ public class PendingNotificationsServlet extends ServletBase {
     } catch (NoSuchFieldException e) {
       throw new RuntimeException(e);
     }
-    IS_REC = new ObjectPropertyFilter("notificationType", "= " + NotificationType.RECOMMENDATION, PendingNotificationsServlet.type);
     NEVER_SENT = new ObjectPropertyFilter("sent", "= null", PendingNotificationsServlet.sent);
     IS_NOT_ACK = new ObjectPropertyFilter("acknowledged", "= null", PendingNotificationsServlet.acknowledged);
   }

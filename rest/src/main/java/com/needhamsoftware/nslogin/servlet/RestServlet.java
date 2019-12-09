@@ -24,8 +24,7 @@ import javax.validation.ValidationException;
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
-import java.io.IOException;
-import java.io.StringWriter;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -87,6 +86,21 @@ public class RestServlet extends javax.servlet.http.HttpServlet {
   protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
     try {
       String pathInfo = req.getPathInfo();
+      if (pathInfo.startsWith("/js/")) {
+        String contextPath = getServletContext().getRealPath(File.separator);
+
+        File jsFile = new File(contextPath, pathInfo);
+        resp.setContentType("text/javascript");
+        resp.setContentLength((int) jsFile.length());
+
+        FileInputStream fileInputStream = new FileInputStream(jsFile);
+        OutputStream respOutputStream = resp.getOutputStream();
+        int bytes;
+        while ((bytes = fileInputStream.read()) != -1) {
+          respOutputStream.write(bytes);
+        }
+        return;
+      }
       ObjectReference ref = new ObjectReference(pathInfo);
       if (!ref.isValid()) {
         Messages.DO.sendErrorMessage("Invalid reference:" + ref);
@@ -115,8 +129,8 @@ public class RestServlet extends javax.servlet.http.HttpServlet {
         } else {
           String startParam = req.getParameter("start");
           String rowsParam = req.getParameter("rows");
-          int start = startParam != null ? Integer.valueOf(startParam) : 0;
-          int rows = rowsParam != null ? Integer.valueOf(rowsParam) : 0;
+          int start = startParam != null ? Integer.parseInt(startParam) : 0;
+          int rows = rowsParam != null ? Integer.parseInt(rowsParam) : 0;
           String sortStr = req.getParameter("sort");
           List<String> sorts = null;
           if (sortStr != null) {

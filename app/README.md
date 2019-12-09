@@ -5,6 +5,9 @@ with ANYTHING else. You will probably want to ensure that this application and t
 holding your users talk to the same database, but even that is not strictly necessary as
 long as this app can connect (via code in core.jar) to the user database.
 
+WARNING: remove restTest.jsp once you verify that all the tests there pass. It is a
+security risk (enumerates a list of usernames).
+
 The only things you MUST preserve are the bundling of the core jar in the 
 WEB-INF/lib dir and this bit from web.xml:
 

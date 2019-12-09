@@ -28,6 +28,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.servlet.*;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
@@ -176,6 +177,7 @@ public class JwtAuthenticationFilter implements Filter, LoginConstants {
       if (StringUtils.isBlank(originalDestination)) {
         originalDestination = "/";
       }
+      resp.addCookie(new Cookie("nslogin-uid", claimsJws.getBody().getSubject()));
       resp.sendRedirect(originalDestination); // finally go to the original url with query params restored
       return;
     } catch (IllegalArgumentException | JwtException e) {

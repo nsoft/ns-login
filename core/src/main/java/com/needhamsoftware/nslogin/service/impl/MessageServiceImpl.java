@@ -76,8 +76,4 @@ public class MessageServiceImpl implements MessageService {
     return messages.get();
   }
 
-  @Override
-  public boolean sendRecommendation(Notification recommendation) {
-    return false;
-  }
 }

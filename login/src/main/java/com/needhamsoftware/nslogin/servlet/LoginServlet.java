@@ -174,7 +174,7 @@ public class LoginServlet extends HttpServlet implements LoginConstants {
             String jws = Jwts.builder()
                 .setIssuer(ISSUER)
                 .setHeaderParam("kid", lk)
-                .setSubject(user.getUsername()) // can never be something not in our database
+                .setSubject(user.getUserEmail()) // can never be something not in our database
                 .signWith(keyPair.getPrivate())
                 .compact();
             HttpSession session = req.getSession();
