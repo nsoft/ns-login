@@ -26,3 +26,23 @@ on which web clients can listen to collect messages instead. Typically the envel
 used for per-request messages and the socket for system broadcasts, additionally messages
 generated while the user was off line may be stored and delivered on login via the
 PendingNotificationServlet
+
+Note that the choice of put vs post for object creation is a matter of some debate
+in the web development community, but this is easily swapped by switching the method 
+names in RestServlet. If you disagree, just change it :)
+
+## Status
+
+Completed:
+1. GET object by id, or filtered/sorted list of objects
+1. PUT to create objects 
+1. POST to update objects 
+1. Javascript framework to perform above
+1. Test page to demonstrate use of Javascript framework 
+1. Notifications of errors/messages via response envelope or via websocket
+
+To Do:
+1. More Demos on test page
+1. Authentication
+1. Authorization 
+1. Actions for complex operations
