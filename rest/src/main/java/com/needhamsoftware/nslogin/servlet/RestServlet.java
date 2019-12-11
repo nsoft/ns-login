@@ -1,5 +1,6 @@
 package com.needhamsoftware.nslogin.servlet;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.needhamsoftware.nslogin.FieldUtil;
 import com.needhamsoftware.nslogin.model.Persisted;
@@ -25,10 +26,7 @@ import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @javax.servlet.annotation.WebServlet(name = "RestServlet")
 @Singleton
@@ -51,10 +49,24 @@ public class RestServlet extends javax.servlet.http.HttpServlet {
     if (ref.isValid()) {
       Persisted p;
       try {
-        p = (Persisted) mapper.readValue(req.getInputStream(), Class.forName(ref.getType().getCanonicalName()));
+        String JSOG;
+        try(java.util.Scanner s = new java.util.Scanner(req.getInputStream())) {
+          JSOG = readAll(s);
+        }
+        Map<String,Object> m = mapper.readValue(JSOG, new TypeReference<Map<String, Object>>() {});
+        if (Validatable.class.isAssignableFrom(ref.getType())) {
+          ((Validatable) ref.getType().newInstance()).validateMap(m);
+        }
+        if (Messages.DO.errorCount() != 0) {
+          handleError(resp, 400);
+          return;
+        }
+        p = (Persisted) mapper.readValue(JSOG, Class.forName(ref.getType().getCanonicalName()));
         Long id = ref.getId();
         if (id != null) {
           p.setId(id);
+        } else {
+          Messages.DO.sendErrorMessage("Can't create new objects with POST, use PUT");
         }
         if (p instanceof Validatable && !((Validatable)p).isValidated()) {
           ((Validatable) p).validate();
@@ -72,10 +84,18 @@ public class RestServlet extends javax.servlet.http.HttpServlet {
       } catch (OptimisticLockException e) {
         Messages.DO.sendErrorMessage("Someone (or something) has made a conflicting change while you were working. Please refresh the page to load the new edits and retry your submission.");
         handleError(resp, 400);
+      } catch (Exception e) {
+        Messages.DO.sendErrorMessage("Internal Error:" + e.getMessage());
+        log.error("Unexpected Exception!", e);
+        handleError(resp,500);
       }
 
     }
 
+  }
+
+  private String readAll(Scanner s) {
+    return s.useDelimiter("\\A").hasNext() ? s.next() : "";
   }
 
   private void handleError(HttpServletResponse resp, int code) throws IOException {

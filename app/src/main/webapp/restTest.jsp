@@ -25,7 +25,7 @@
 <header>Please Note that this page provides testing and examples of how the rest framework can be used, but
   none of this is required to use the login/logout features. /rest is entirely decoupled from the login/out basics
 </header>
-<div class="page home-page">
+<div id="test" class="page home-page">
   <p id="welcome">Finding filtered objects: User name should appear here --&gt; </p><br/>
   <p>Below a table of users and their id's should appear</p>
   <table data-type="AppUser">
@@ -48,6 +48,60 @@
   <div>
     <app:messages/>
   </div>
+  <form data-type="TestThing" data-method="POST" onsubmit="REST.submit">
+    <table>
+      <tr>
+        <td><label for="test_id">Id:</label> </td>
+        <td><input type="text" id="test_id" name="test_id" ></td>
+      </tr>
+      <tr>
+        <td><label for="test_aDouble">A Double</label></td>
+        <td><input type="text" id="test_aDouble" name="test_aDouble"> </td>
+      </tr>
+      <tr>
+        <td><label for="test_aString">A String:</label></td>
+        <td><input type="text" id="test_aString" name="test_aString"> </td>
+      </tr>
+      <tr>
+        <td><label for="test_anInstant">An Instant</label></td>
+        <td><input type="text" id="test_anInstant" name="test_anInstant"> </td>
+      </tr>
+      <tr>
+        <td><label for="test_anInt">An Integer:</label></td>
+        <td><input type="text" id="test_anInt" name="test_anInt"> </td>
+      </tr>
+    </table>
+    <input type="hidden" name="test_version">
+    <input type="submit">
+  </form>
+
+  <h2>Test things</h2>
+  <table data-type="TestThing">
+    <thead>
+    <tr>
+      <th></th>
+      <th>ID</th>
+      <th>An Integer</th>
+      <th>A Double</th>
+      <th>A String</th>
+      <th>An Instant</th>
+      <th>Last Modified</th>
+      <th>Modified By</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr class="rowTemplate">
+      <td data-render="checkBoxId"></td>
+      <td>id</td>
+      <td>anInt</td>
+      <td>aDouble</td>
+      <td>aString</td>
+      <td>anInstant</td>
+      <td>modified</td>
+      <td>modifiedBy.username</td>
+    </tr>
+    </tbody>
+  </table>
 </div>
 <!-- Easy mode script loading, see https://www.html5rocks.com/en/tutorials/speed/script-loading/ if performance is key -->
 <script src="https://code.jquery.com/jquery-3.4.1.min.js"
@@ -80,8 +134,13 @@
       }, 1)
     }
     $('#wsTestBtn').click(function (evt) {
-      let send = REST_SOCKET.send("test");
+      REST_SOCKET.send("test");
       return false;
+    })
+    $("#test_id").on("change", function (evt) {
+      let $testId = $("#test_id");
+      $testId.closest("*[data-type]").attr("data-id", $testId.val())
+      REST.refreshPage($testId)
     })
   })
 </script>

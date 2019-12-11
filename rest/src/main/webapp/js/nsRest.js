@@ -200,10 +200,11 @@
   }
 
   /**
-   * Submit any form that contains sufficient data to represent an object
+   * Submit any form that contains sufficient data to represent an object.
+   * This is intended to be used as an event handler for onSubmit for the form.
    *
-   * @param event
-   * @returns {boolean}
+   * @param event the event triggering the submit action
+   * @returns {boolean} false to prevent event propagation.
    */
   function submitForm(event) {
     event.preventDefault();
@@ -216,7 +217,7 @@
     if (method === "PUT" || method === "POST") {
       let preExec;
       //noinspection JSUnresolvedVariable
-      let actionObj = NS_ACTION.getAction(action); // (future feature)
+      let actionObj = undefined; // NS_ACTION.getAction(action); // (future feature)
       if (actionObj && actionObj.preExecute) {
         preExec = actionObj.preExecute
       }
@@ -242,6 +243,21 @@
     return false;
   }
 
+  /**
+   * Serializes a form into a JSOG encoded object. Supports checkboxes and any input
+   * that has a useful value for .val(). Assumptions:
+   *
+   * 1. form is contained in an element of class "page"
+   * 2. Containing element with .page has an id attribute
+   * 3. names of form fields are pagename_propertyName (java property format)
+   *
+   * This implies only one form per .page
+   *
+   * @param form the form element to serialize
+   * @param original optionally, the original object meant to be edited.
+   * @param preExec optionally, a function to execute on the object just before JSOG.stringify()
+   * @returns {string} JSOG representation of the object corresponding to the field
+   */
   function serializeForm(form, original, preExec) {
     let obj = original ? original : {};
     let $form = $(form);
@@ -260,7 +276,7 @@
     return JSOG.stringify(obj);
   }
 
-  function refreshDataOnPage(elemInPage) {
+    function refreshDataOnPage(elemInPage) {
     // repopulate all tables on this ".page".
     $(elemInPage).parents(".page").each(function () {
       let $dataDrivenElements = $(this).find("*[data-type]");
@@ -278,6 +294,8 @@
       populateTable.apply(elem)
     } else if (elem.tagName === 'SELECT') {
       populateSelect.apply(elem)
+    } else if (elem.tagName === 'FORM') {
+      populateForm.apply(elem)
     } else {
       // elements other than a table or form must supply a callback that accepts a serialized RestResponse object
       // The function should be attached to the element under the name dataResponseHandler. They should also
@@ -286,6 +304,9 @@
       let $elem = $(elem);
       let type = $elem.attr("data-type");
       let id = $elem.attr("data-id");
+      if (!id) {
+        return;
+      }
       let url = ENDPOINT + type + ((id && /\d+/.test(id)) ? '/' + id : '');
       //noinspection JSUnresolvedFunction
       $.get(ensureNoBackRefs(url))
@@ -404,9 +425,44 @@
   }
 
   /**
+   * Populate a form, applying the values of the object to the values of the
+   * fetched object to the form fields by naming convention: pageName_propertyName
+   */
+  function populateForm() {
+    let $form = $(this);
+    let elem = this;
+    let type = $form.attr("data-type");
+    let id = $form.attr("data-id");
+    if (!id) {
+      return;
+    }
+    REST.find(type, "id=" + id, function (data) {
+      if (typeof elem.dataResponseHandler === 'function') {
+        //noinspection JSUnresolvedFunction
+        elem.dataResponseHandler(data);
+      } else {
+        let pageName = $form.closest(".page").attr('id');
+        $form.find("input").each(function () {
+          let fieldName = this.name.substr(pageName.length + 1);
+          let datum = data[0][fieldName];
+
+          if (this.name.startsWith(pageName)) {
+            if (this.type === 'checkbox') {
+              $(this).prop('checked', !!datum);
+            } else {
+              $(this).val(datum)
+            }
+          }
+        })
+      }
+    })
+  }
+
+  /**
    * populate a select when each option corresponds to a row from a query.
    */
   function populateSelect() {
+    // todo: this is not well tested...
     // noinspection JSUnusedGlobalSymbols
       this.refreshIt = populateSelect;
     let select = this;
@@ -738,24 +794,26 @@
 
   // things we export for use elsewhere.
   // noinspection JSUnusedGlobalSymbols
-    window.REST = {
-        decode              : decode,
-        lookup              : lookup,
-        list                : list,
-        parse               : parse,
-        find                : find,
-        refresh             : refresh,
-        refreshPage         : refreshDataOnPage,
-        updateMessages      : updateMessages,
-        ajaxFail            : ajaxFail,
-        addPreRender        : addPreRender,
-        addPostRender       : addPostRender,
-        findIndexed         : findIndexed,
-        indexTypeByProp     : indexTypeByProp,
-        displayErrorMessage : displayErrorMessage,
-        displayMessage      : displayMessage,
-        update              : update,
-        prepareMessages     : prepareMessages
+  window.REST = {
+ // external name         internal name
+    decode:               decode,
+    lookup:               lookup,
+    list:                 list,
+    parse:                parse,
+    find:                 find,
+    refresh:              refresh,
+    submit:               submitForm,
+    refreshPage:          refreshDataOnPage,
+    updateMessages:       updateMessages,
+    ajaxFail:             ajaxFail,
+    addPreRender:         addPreRender,
+    addPostRender:        addPostRender,
+    findIndexed:          findIndexed,
+    indexTypeByProp:      indexTypeByProp,
+    displayErrorMessage:  displayErrorMessage,
+    displayMessage:       displayMessage,
+    update:               update,
+    prepareMessages:      prepareMessages
   };
 
 })();

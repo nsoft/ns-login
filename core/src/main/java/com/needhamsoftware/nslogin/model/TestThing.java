@@ -19,6 +19,7 @@ package com.needhamsoftware.nslogin.model;
 
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.needhamsoftware.nslogin.servlet.Messages;
 import com.voodoodyne.jackson.jsog.JSOGGenerator;
 
 import javax.persistence.Entity;
@@ -26,6 +27,10 @@ import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
+
+import static com.needhamsoftware.nslogin.model.Validatable.*;
+import static com.needhamsoftware.nslogin.model.Validatable.checkInteger;
 
 /**
  * Class with properties of various types to validate our REST capabilities. Typically
@@ -34,7 +39,7 @@ import java.util.List;
 @Entity
 @JsonIdentityInfo(generator=JSOGGenerator.class)
 @JsonIgnoreProperties(ignoreUnknown=true)
-public class TestThing extends Persisted {
+public class TestThing extends Persisted implements Validatable{
   private String aString;
   private int anInt;
   private double aDouble;
@@ -106,5 +111,44 @@ public class TestThing extends Persisted {
 
   public void setSomeThings(List<TestThing> someThings) {
     this.someThings = someThings;
+  }
+
+  @Override
+  public boolean validate() {
+    int incommingErrors = Messages.DO.errorCount();
+    return Messages.DO.errorCount() > incommingErrors;
+  }
+
+  @Override
+  public boolean validateMap(Map<String, Object> map) {
+    int incommingErrors = Messages.DO.errorCount();
+    String propName;
+    Object id = map.get("id");
+    if (id != null) {
+      propName = "id";
+      checkInteger(id, propName);
+    }
+    propName = "anInt";
+    Object anInt = map.get(propName);
+    if(anInt != null) {
+      checkInteger(anInt, propName);
+    }
+    propName = "aDouble";
+    Object aDouble = map.get(propName);
+    if (aDouble != null) {
+      checkDouble(aDouble, propName);
+    }
+    propName = "anInstant";
+    Object anInstant = map.get(propName);
+    if (anInstant != null) {
+      checkInstant(anInstant, propName);
+    }
+
+    return Messages.DO.errorCount() > incommingErrors;
+  }
+
+  @Override
+  public boolean isValidated() {
+    return false;
   }
 }

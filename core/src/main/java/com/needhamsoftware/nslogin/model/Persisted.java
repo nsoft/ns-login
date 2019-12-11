@@ -21,6 +21,7 @@ import java.time.Instant;
 
 @MappedSuperclass
 public class Persisted {
+  @RestFilterEnable
   @GeneratedValue
   @Id
   private Long id;
