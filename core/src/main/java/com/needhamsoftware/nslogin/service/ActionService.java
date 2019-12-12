@@ -14,20 +14,8 @@
  *    limitations under the License.
  */
 
-package com.needhamsoftware.nslogin.servlet;
+package com.needhamsoftware.nslogin.service;
 
-import com.needhamsoftware.nslogin.model.AppUser;
-import com.needhamsoftware.nslogin.service.ObjectService;
+public interface ActionService extends ActionVisitor {
 
-import javax.inject.Inject;
-import javax.servlet.http.HttpServletRequest;
-
-public class ServletBase extends javax.servlet.http.HttpServlet {
-  @Inject
-  protected ObjectService objectService;
-
-  AppUser getSiteUser(HttpServletRequest req) throws NumberFormatException {
-    AppUser siteUser = ServletUtils.lookUpPrincipal(req,objectService);
-    return objectService.get(AppUser.class, siteUser.getId());
-  }
 }

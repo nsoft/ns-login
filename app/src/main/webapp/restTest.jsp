@@ -125,7 +125,7 @@
     // see restTest.jsp for more complete testing
     if (REST) {
       //alert('foo');
-      let email = Cookies.get("nslogin-uid");
+      let email = Cookies.get("nslogin-uid"); // todo: probably should make this parse the token and remove this cookie
       //alert(email)
       REST.find("AppUser", "userEmail='" + email + "\'", function (data) {
         if (data && data.length && data.length > 0) {

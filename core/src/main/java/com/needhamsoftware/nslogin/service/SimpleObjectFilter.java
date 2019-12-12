@@ -14,20 +14,31 @@
  *    limitations under the License.
  */
 
-package com.needhamsoftware.nslogin.servlet;
+package com.needhamsoftware.nslogin.service;
 
-import com.needhamsoftware.nslogin.model.AppUser;
-import com.needhamsoftware.nslogin.service.ObjectService;
+public class SimpleObjectFilter implements Filter {
+  private String field;
+  private String operator;
+  private Object value;
 
-import javax.inject.Inject;
-import javax.servlet.http.HttpServletRequest;
+  public SimpleObjectFilter(String field, String operator, Object value) {
+    this.field = field;
+    this.operator = operator;
+    this.value = value;
+  }
 
-public class ServletBase extends javax.servlet.http.HttpServlet {
-  @Inject
-  protected ObjectService objectService;
+  @Override
+  public String getField() {
+    return field;
+  }
 
-  AppUser getSiteUser(HttpServletRequest req) throws NumberFormatException {
-    AppUser siteUser = ServletUtils.lookUpPrincipal(req,objectService);
-    return objectService.get(AppUser.class, siteUser.getId());
+  @Override
+  public String getOperator() {
+    return operator;
+  }
+
+  @Override
+  public Object getValue(ObjectService service) {
+    return value;
   }
 }

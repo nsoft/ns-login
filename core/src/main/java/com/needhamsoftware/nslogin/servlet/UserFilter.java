@@ -22,6 +22,7 @@ import com.needhamsoftware.nslogin.service.ObjectService;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.servlet.*;
+import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 
 @Singleton
@@ -37,14 +38,9 @@ public class UserFilter implements Filter {
 
   @Override
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
-    String user = request.getParameter("user");
-    if (user == null) {
-      user = "1";
-    }
-    AppUser siteUser = objectService.get(AppUser.class, Long.valueOf(user));
-    if (siteUser == null) {
-      siteUser = objectService.get(AppUser.class, 1L);
-    }
+    HttpServletRequest req = (HttpServletRequest) request;
+    AppUser siteUser = ServletUtils.lookUpPrincipal(req, objectService);
+
     request.setAttribute("com.needhamsoftware.nslogin.SITE_USER",siteUser);
     chain.doFilter(request,response);
   }

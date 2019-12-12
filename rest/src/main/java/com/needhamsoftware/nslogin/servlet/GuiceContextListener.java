@@ -17,10 +17,7 @@
 package com.needhamsoftware.nslogin.servlet;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.inject.Guice;
-import com.google.inject.Inject;
-import com.google.inject.Injector;
-import com.google.inject.TypeLiteral;
+import com.google.inject.*;
 import com.google.inject.matcher.AbstractMatcher;
 import com.google.inject.persist.PersistService;
 import com.google.inject.persist.jpa.JpaPersistModule;
@@ -35,8 +32,11 @@ import com.needhamsoftware.nslogin.hibernate.HibernateUtil;
 import com.needhamsoftware.nslogin.service.MessageService;
 import com.needhamsoftware.nslogin.service.ObjectService;
 import com.needhamsoftware.nslogin.service.impl.MessageServiceImpl;
+import com.needhamsoftware.nslogin.shiro.HibernateRealm;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.shiro.authc.credential.CredentialsMatcher;
+import org.apache.shiro.guice.web.ShiroWebModule;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
@@ -49,7 +49,10 @@ import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
+
 
 public class GuiceContextListener extends GuiceServletContextListener {
 
@@ -67,6 +70,7 @@ public class GuiceContextListener extends GuiceServletContextListener {
 
   @Override
   public void contextInitialized(ServletContextEvent servletContextEvent) {
+    ctx = servletContextEvent.getServletContext();
     super.contextInitialized(servletContextEvent);
     objectService.loadSystemUser();
   }
@@ -149,12 +153,31 @@ public class GuiceContextListener extends GuiceServletContextListener {
               serve("/messages/*").with(PendingNotificationsServlet.class);
 
               filter("/*").through(PersistFilter.class);
+              Map<String,String> params = new HashMap<>();
+              params.put("keyFetchUrl", "http://localhost:8080/login/service?kid=");
+              params.put("redirectToLogin", "false");
+              //filter("/*").through(ShiroFilter.class);
+              filter("/*").through(ShiroJWTAuthenticationFilter.class, params);
               filter("/*").through(UserFilter.class);
               filter("/*").through(MessageCollectionFilter.class);
               filter("/socket/*").through(WebSocketFilter.class);
             }
-
+          },
+          new ShiroWebModule(GuiceContextListener.this.ctx) {
+            @Override
+            protected void configureShiroWeb() {
+              try {
+                bindRealm().toConstructor(HibernateRealm.class.getConstructor(CredentialsMatcher.class));
+              } catch (NoSuchMethodException e) {
+                addError(e);
+              }
+            }
+            @Provides
+            CredentialsMatcher getCredentialsMatcher() {
+              return new JWTCredentialsMatcher();
+            }
           });
+
     }
     return injector;
 

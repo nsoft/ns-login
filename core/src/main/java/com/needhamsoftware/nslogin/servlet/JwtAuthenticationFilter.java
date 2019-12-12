@@ -51,6 +51,7 @@ public class JwtAuthenticationFilter implements Filter, LoginConstants {
   private static final String ADMINISTRATOR = "Please contact your system administrator for assistance with your account.";
 
   private URL keyFetchUrl; // the url to the login servlet with a parameter that requests the public key for the given id
+  private boolean redirectToLogin;
 
   private LoadingCache<String, byte[]> keyCache = CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.HOURS).build(
       new CacheLoader<>() {
@@ -70,6 +71,7 @@ public class JwtAuthenticationFilter implements Filter, LoginConstants {
   public void init(FilterConfig filterConfig) throws ServletException {
     try {
       this.keyFetchUrl = new URL(filterConfig.getInitParameter("keyFetchUrl"));
+      this.redirectToLogin = Boolean.parseBoolean(filterConfig.getInitParameter("redirectToLogin"));
     } catch (MalformedURLException e) {
       throw new ServletException(e);
     }
@@ -101,8 +103,10 @@ public class JwtAuthenticationFilter implements Filter, LoginConstants {
 
     // are we logging out?
     String logout = req.getParameter("logout");
+    boolean loggingOut = false;
     if (logout != null) {
       req.getSession().invalidate();
+      loggingOut = true;
     }
 
     // Did we just finish login?
@@ -113,8 +117,20 @@ public class JwtAuthenticationFilter implements Filter, LoginConstants {
     // if we see the token process it and redirect to get rid of it.
     HttpSession session = req.getSession();
     if (session.getAttribute(PRINCIPAL) != null && token == null) {
-      chain.doFilter(request, response);
+      proceed(request, response, chain, session.getAttribute(PRINCIPAL));
       return;
+    }
+
+    // fall back to cookie if it exists
+    if (token == null && !loggingOut) {
+      Cookie[] cookies = req.getCookies();
+      if (cookies != null) {
+        for (Cookie cookie : cookies) {
+          if (X_JWT_TOKEN.equals(cookie.getName())) {
+            token = cookie.getValue();
+          }
+        }
+      }
     }
 
     if (token == null) {
@@ -156,11 +172,18 @@ public class JwtAuthenticationFilter implements Filter, LoginConstants {
       }
 
       session.setAttribute(X_LOGIN_RETURN_TO, returnPath);
-      resp.sendRedirect("/login/?from=" + req.getRequestURL());
+      Cookie jwt = new Cookie(X_JWT_TOKEN, "");
+      jwt.setMaxAge(0); // cookie to expire before session
+      resp.addCookie(jwt);
+      if(redirectToLogin) {
+        resp.sendRedirect("/login/?from=" + req.getRequestURL());
+      } else {
+        resp.sendError(401);
+      }
       return;
     }
 
-    // Just returned from log-in so we need to (re)set the principle
+    // Just returned from log-in, or first time arriving with cookie so we need to (re)set the principle
     try {
       // important not to do anything to the user's session until they are validated by this next
       // line, otherwise the user might be affected by the actions of an unauthenticated user.
@@ -175,9 +198,13 @@ public class JwtAuthenticationFilter implements Filter, LoginConstants {
       String originalDestination = (String) session.getAttribute(X_LOGIN_RETURN_TO);
       session.removeAttribute(X_LOGIN_RETURN_TO);
       if (StringUtils.isBlank(originalDestination)) {
-        originalDestination = "/";
+        originalDestination = req.getRequestURI();
       }
-      resp.addCookie(new Cookie("nslogin-uid", claimsJws.getBody().getSubject()));
+      Cookie uid = new Cookie("nslogin-uid", claimsJws.getBody().getSubject());
+      resp.addCookie(uid);
+      Cookie jwt = new Cookie(X_JWT_TOKEN, token);
+      jwt.setMaxAge(session.getMaxInactiveInterval() - 5); // cookie to expire before session
+      resp.addCookie(jwt);
       resp.sendRedirect(originalDestination); // finally go to the original url with query params restored
       return;
     } catch (IllegalArgumentException | JwtException e) {
@@ -186,6 +213,14 @@ public class JwtAuthenticationFilter implements Filter, LoginConstants {
       errorToLogin(resp);
       return;
     }
+  }
+
+  /**
+   * Override this in sub classes that need to do additional configuration of Authorization infrastructure.
+   * One example might involve setting the subject for shiro...
+   */
+  protected void proceed(ServletRequest request, ServletResponse response, FilterChain chain, Object principal) throws IOException, ServletException {
+    chain.doFilter(request, response);
   }
 
   private Jws<Claims> checkToken(String token) {

@@ -17,12 +17,44 @@
 package com.needhamsoftware.nslogin.servlet;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.needhamsoftware.nslogin.model.AppUser;
+import com.needhamsoftware.nslogin.service.ObjectService;
+import com.needhamsoftware.nslogin.service.SimpleObjectFilter;
+import org.apache.shiro.authz.UnauthenticatedException;
 
 import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+import static com.needhamsoftware.nslogin.servlet.LoginConstants.PRINCIPAL;
 
 public class ServletUtils {
+
+  static AppUser lookUpPrincipal(HttpServletRequest req, ObjectService objectService) {
+    String userEmail = (String) req.getSession().getAttribute(PRINCIPAL);
+    return lookUpUserByEmail(objectService, userEmail);
+  }
+
+  static AppUser lookUpUserByEmail(ObjectService objectService, String userEmail) {
+    AppUser siteUser;
+    if (userEmail == null) {
+        throw new UnauthenticatedException("No Principal in session");
+    } else {
+      List<AppUser> res = objectService.list(AppUser.class, 0, 1,
+          Arrays.asList(new com.needhamsoftware.nslogin.service.Filter[]{
+              new SimpleObjectFilter("userEmail", "=", userEmail)}), Collections.emptyList());
+      if (res.size() != 1) {
+        throw new UnauthenticatedException("Non-unitary result when selecting user by email");
+      }
+      siteUser = res.get(0);
+    }
+    return siteUser;
+  }
+
   public void handleError(HttpServletResponse resp, int code, ObjectMapper mapper) throws IOException {
     resp.setStatus(code);
     RestResponse response = new RestResponse();

@@ -24,7 +24,9 @@ import com.voodoodyne.jackson.jsog.JSOGGenerator;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 import java.time.Instant;
+import java.util.List;
 
 // class name to avoid clashes with user keyword in various DB systems.
 @Entity
@@ -51,6 +53,14 @@ public class AppUser extends Persisted {
   @JsonIgnore // this should never be shipped to the user.
   @ManyToOne
   private UserSecurity securityInfo;
+
+  @JsonIgnore
+  // the user's roles, populated only for Principals and derived from JWT token
+  private transient List<Role> roles;
+  @JsonIgnore
+  @OneToMany
+  // permissions that the user has regardless of roles (edit self, etc)
+  private List<Permission> intrinsicPermissions;
 
   public AppUser() {}
 
@@ -124,5 +134,22 @@ public class AppUser extends Persisted {
   @JsonIgnore // this should never be shipped to the user.
   public Instant getModified() {
     return super.getModified();
+  }
+
+  @JsonIgnore // this should never be shipped to the user.
+  public List<Role> getRoles() {
+    return roles;
+  }
+
+  public void setRoles(List<Role> roles) {
+    this.roles = roles;
+  }
+
+  public List<Permission> getIntrinsicPermissions() {
+    return intrinsicPermissions;
+  }
+
+  public void setIntrinsicPermissions(List<Permission> intrinsicPermissions) {
+    this.intrinsicPermissions = intrinsicPermissions;
   }
 }

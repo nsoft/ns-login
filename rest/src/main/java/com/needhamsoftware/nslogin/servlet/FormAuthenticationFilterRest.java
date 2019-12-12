@@ -16,18 +16,20 @@
 
 package com.needhamsoftware.nslogin.servlet;
 
-import com.needhamsoftware.nslogin.model.AppUser;
-import com.needhamsoftware.nslogin.service.ObjectService;
+import org.apache.shiro.web.filter.authc.FormAuthenticationFilter;
 
-import javax.inject.Inject;
-import javax.servlet.http.HttpServletRequest;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
-public class ServletBase extends javax.servlet.http.HttpServlet {
-  @Inject
-  protected ObjectService objectService;
+/**
+ *
+ */
+public class FormAuthenticationFilterRest extends FormAuthenticationFilter {
 
-  AppUser getSiteUser(HttpServletRequest req) throws NumberFormatException {
-    AppUser siteUser = ServletUtils.lookUpPrincipal(req,objectService);
-    return objectService.get(AppUser.class, siteUser.getId());
+  @Override
+  protected void redirectToLogin(ServletRequest request, ServletResponse response) throws IOException {
+    ((HttpServletResponse)response).sendError(401);
   }
 }

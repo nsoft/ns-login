@@ -15,9 +15,9 @@
   ~    limitations under the License.
   -->
 
-<Configuration status="ERROR">
+<Configuration status="DEBUG" >
   <Appenders>
-    <File name="LogToFile" fileName="login.log">
+    <File name="LogToFile" fileName="${env:CATALINA_BASE}/logs/rest.log">
       <PatternLayout>
         <Pattern>%d %p %c{1.} [%t] %m%n</Pattern>
       </PatternLayout>

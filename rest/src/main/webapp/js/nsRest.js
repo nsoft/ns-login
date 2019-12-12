@@ -218,6 +218,7 @@
       let preExec;
       //noinspection JSUnresolvedVariable
       let actionObj = undefined; // NS_ACTION.getAction(action); // (future feature)
+      // noinspection PointlessBooleanExpressionJS,JSObjectNullOrUndefined
       if (actionObj && actionObj.preExecute) {
         preExec = actionObj.preExecute
       }
@@ -613,7 +614,7 @@
   //noinspection JSUnusedLocalSymbols
   function ajaxFail(jqXHR, statusMsg) {
     if (jqXHR.status === 401) {
-      window.location.href = new URI().path(ENDPOINT).toString();  // not replace to avoid killing back button history.
+      window.location.href = new URI().path("/").toString();  // not replace to avoid killing back button history.
     } else {
       let response = REST.parse(jqXHR.responseText);
       updateMessages(response);

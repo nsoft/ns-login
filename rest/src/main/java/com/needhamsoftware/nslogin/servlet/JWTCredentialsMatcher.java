@@ -16,18 +16,13 @@
 
 package com.needhamsoftware.nslogin.servlet;
 
-import com.needhamsoftware.nslogin.model.AppUser;
-import com.needhamsoftware.nslogin.service.ObjectService;
+import org.apache.shiro.authc.AuthenticationInfo;
+import org.apache.shiro.authc.AuthenticationToken;
+import org.apache.shiro.authc.credential.CredentialsMatcher;
 
-import javax.inject.Inject;
-import javax.servlet.http.HttpServletRequest;
-
-public class ServletBase extends javax.servlet.http.HttpServlet {
-  @Inject
-  protected ObjectService objectService;
-
-  AppUser getSiteUser(HttpServletRequest req) throws NumberFormatException {
-    AppUser siteUser = ServletUtils.lookUpPrincipal(req,objectService);
-    return objectService.get(AppUser.class, siteUser.getId());
+public class JWTCredentialsMatcher implements CredentialsMatcher {
+  @Override
+  public boolean doCredentialsMatch(AuthenticationToken token, AuthenticationInfo info) {
+    return false;
   }
 }

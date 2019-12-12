@@ -27,6 +27,10 @@
             <param-name>keyFetchUrl</param-name>
             <param-value>http://localhost:8080/login/service?kid=</param-value>
         </init-param>
+        <init-param>
+            <param-name>redirectToLogin</param-name>
+            <param-value>true</param-value>
+        </init-param>
     </filter>
     <filter-mapping>
         <filter-name>jwt-auth</filter-name>
