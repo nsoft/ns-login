@@ -30,7 +30,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class ObjectPropertyFilter implements Filter {
-  private static final Pattern FILTER_PATTERN = Pattern.compile("(=|>=|!=|<=|>|<)\\s*(.*)");
+  public static final Pattern FILTER_OPER_PATTERN = Pattern.compile("(=|>=|!=|<=|>|<)\\s*(.*)");
   private String field;
   private String operator;
   private Object value;
@@ -39,7 +39,7 @@ public class ObjectPropertyFilter implements Filter {
   public ObjectPropertyFilter(String field, String filterStr, Field objField) {
     this.field = field;
     filterStr = URLDecoder.decode(filterStr, StandardCharsets.UTF_8);
-    Matcher m = FILTER_PATTERN.matcher(filterStr);
+    Matcher m = FILTER_OPER_PATTERN.matcher(filterStr);
     if(!m.matches()) {
       throw new IllegalArgumentException("Could not parse filter pattern:" + filterStr);
     }
@@ -104,7 +104,7 @@ public class ObjectPropertyFilter implements Filter {
       if ("null".equals(s.trim())) {
         return null;
       } else {
-        return new Date(Long.valueOf(s));
+        return new Date(Long.parseLong(s));
       }
     }
     if (type == Instant.class) {
@@ -114,11 +114,20 @@ public class ObjectPropertyFilter implements Filter {
         try {
           return Instant.parse(s);
         } catch (DateTimeParseException e) {
-          return Instant.ofEpochMilli(Long.valueOf(s));
+          return Instant.ofEpochMilli(Long.parseLong(s));
         }
       }
     }
     return s;
   }
 
+  @Override
+  public String toString() {
+    return "ObjectPropertyFilter{" +
+        "field='" + field + '\'' +
+        ", operator='" + operator + '\'' +
+        ", value=" + value +
+        ", objField=" + objField +
+        '}';
+  }
 }

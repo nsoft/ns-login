@@ -44,6 +44,11 @@ public class ObjectServiceWrapper implements GuiceObjectService {
   }
 
   @Override
+  public <T extends Persisted> List<T> get(Class<T> clazz, List<Long> identifiers) {
+    return service.get(clazz,identifiers);
+  }
+
+  @Override
   public Persisted getFresh(Class<? extends Persisted> clazz, Long identifier, boolean privileged) {
     return service.getFresh(clazz, identifier, privileged);
   }

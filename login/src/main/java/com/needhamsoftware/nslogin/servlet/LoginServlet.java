@@ -21,6 +21,7 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.needhamsoftware.nslogin.model.AppUser;
+import com.needhamsoftware.nslogin.model.Role;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.apache.commons.lang3.StringUtils;
@@ -47,6 +48,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 // using explicit returns in several places to ensure adding logic doesn't change the flow inadvertently
 @SuppressWarnings("UnnecessaryReturnStatement")
@@ -158,6 +160,10 @@ public class LoginServlet extends HttpServlet implements LoginConstants {
           return;
         }
         AppUser user = resultList.get(0);
+        TypedQuery<Role> roleQuery = em.createQuery("Select r from Role r, AppUser u where u.userEmail = :email and u MEMBER of r.members", Role.class);
+        roleQuery.setParameter("email", user.getUserEmail());
+        List<Role> roles = roleQuery.getResultList();
+        List<String> roleIds = roles.stream().map(Role::getId).map(String::valueOf).collect(Collectors.toList());
         String passwordHash = user.getSecurityInfo().getPasswordHash();
         if (passwordHash == null || !checkPw(passwords[0], passwordHash)) {
           if (passwordHash == null) {
@@ -175,6 +181,7 @@ public class LoginServlet extends HttpServlet implements LoginConstants {
                 .setIssuer(ISSUER)
                 .setHeaderParam("kid", lk)
                 .setSubject(user.getUserEmail()) // can never be something not in our database
+                .claim(ServletUtils.NSLOGIN_ROLES, String.join(",",roleIds))
                 .signWith(keyPair.getPrivate())
                 .compact();
             HttpSession session = req.getSession();

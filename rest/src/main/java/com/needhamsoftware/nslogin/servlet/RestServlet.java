@@ -10,6 +10,7 @@ import com.needhamsoftware.nslogin.service.Filter;
 import com.needhamsoftware.nslogin.service.ObjectService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.shiro.authz.UnauthorizedException;
 import org.hibernate.exception.ConstraintViolationException;
 
 import javax.inject.Inject;
@@ -28,6 +29,7 @@ import java.beans.Introspector;
 import java.io.*;
 import java.util.*;
 
+@SuppressWarnings("CdiInjectionPointsInspection")
 @javax.servlet.annotation.WebServlet(name = "RestServlet")
 @Singleton
 public class RestServlet extends javax.servlet.http.HttpServlet {
@@ -55,7 +57,8 @@ public class RestServlet extends javax.servlet.http.HttpServlet {
         }
         Map<String,Object> m = mapper.readValue(JSOG, new TypeReference<Map<String, Object>>() {});
         if (Validatable.class.isAssignableFrom(ref.getType())) {
-          ((Validatable) ref.getType().newInstance()).validateMap(m);
+          //noinspection unchecked
+          ((Validatable) ref.getType().getConstructor().newInstance()).validateMap(m);
         }
         if (Messages.DO.errorCount() != 0) {
           handleError(resp, 400);
@@ -170,7 +173,7 @@ public class RestServlet extends javax.servlet.http.HttpServlet {
       Messages.DO.exception(nfe, log);
       handleError(resp, 400);
       log.debug("NFE:",nfe);
-    } catch(SecurityException e) {
+    } catch(SecurityException | UnauthorizedException e) {
       Messages.DO.sendErrorMessage("Insufficient Access Rights");
       handleError(resp, 403);
     } catch (Exception e) {

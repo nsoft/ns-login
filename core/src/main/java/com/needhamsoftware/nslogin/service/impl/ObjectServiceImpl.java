@@ -24,9 +24,13 @@ import com.needhamsoftware.nslogin.PasswordStandards;
 import com.needhamsoftware.nslogin.model.*;
 import com.needhamsoftware.nslogin.service.Filter;
 import com.needhamsoftware.nslogin.service.ObjectService;
+import com.needhamsoftware.nslogin.servlet.ObjectPropertyFilter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.shiro.SecurityUtils;
+import org.apache.shiro.authz.permission.WildcardPermission;
+import org.apache.shiro.subject.PrincipalCollection;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -40,12 +44,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Singleton
 public class ObjectServiceImpl implements ObjectService {
 
   private static Logger log = LogManager.getLogger();
+  private static final Pattern POS_INTEGER = Pattern.compile("\\d+");
 
   @SuppressWarnings("CdiInjectionPointsInspection")
   @Inject
@@ -72,7 +78,7 @@ public class ObjectServiceImpl implements ObjectService {
       SYSTEM_USER.setUsername("SYSTEM");
       UserSecurity security = new UserSecurity();
       // obviously one of the first tasks on deployment is to change this!
-      security.setPasswordHash(PasswordStandards.makeHashPw("$ystem123ABC"));
+      security.setPasswordHash(PasswordStandards.makeHashPw("$System123ABC"));
       SYSTEM_USER = entityManager.merge(SYSTEM_USER);
       security = entityManager.merge(security);
       SYSTEM_USER.setSecurityInfo(security);
@@ -95,6 +101,19 @@ public class ObjectServiceImpl implements ObjectService {
   }
 
   @Override
+  public <T extends Persisted> List<T> get(Class<T> clazz, List<Long> identifiers) {
+    EntityManager entityManager = entityManagerProvider.get();
+    @SuppressWarnings("JpaQlInspection")
+    String qlString = "from " + clazz.getName() +
+        " where id in :ids";
+    TypedQuery<T> q = entityManager
+        .createQuery(qlString, clazz)
+        .setParameter("ids", identifiers);
+
+    return  q.getResultList();
+  }
+
+  @Override
   public Persisted getFresh(Class<? extends Persisted> clazz, Long identifier, boolean privileged) {
     return get(clazz, identifier, true);
   }
@@ -102,22 +121,22 @@ public class ObjectServiceImpl implements ObjectService {
   private <T extends Persisted> T get(Class<T> clazz, Long identifier, boolean fresh) {
     EntityManager entityManager = entityManagerProvider.get();
 
+    @SuppressWarnings("JpaQlInspection")
     String qlString = "from " + clazz.getName() +
         " where id=:id";
-    Query q = entityManager
-        .createQuery(qlString)
+    TypedQuery<T> q = entityManager
+        .createQuery(qlString, clazz)
         .setParameter("id", identifier);
     if (fresh) {
       // this doesn't seem to be effective... not sure why
       q.setHint("javax.persistence.cache.retrieveMode", CacheRetrieveMode.BYPASS);
     }
 
-    List resultList = q.getResultList();
+    List<T> resultList = q.getResultList();
     if (resultList.size() > 1) {
       throw new PersistenceException("Non-unique ID for " + clazz);
     }
-    //noinspection unchecked
-    return resultList.size() == 1 ? (T) resultList.get(0) : null;
+    return resultList.size() == 1 ? resultList.get(0) : null;
   }
 
   @Override
@@ -140,6 +159,7 @@ public class ObjectServiceImpl implements ObjectService {
     return list(clazz, start, rows, filters, sorts, privileged, false);
   }
 
+  @SuppressWarnings("SameParameterValue")
   private <T extends Persisted> List<T> list(
       Class<T> clazz,
       int start, int rows,
@@ -150,13 +170,11 @@ public class ObjectServiceImpl implements ObjectService {
     EntityManager entityManager = entityManagerProvider.get();
     TypedQuery<T> q;
     if (privileged) {
+      // for use in internal system queries
       q = buildQuery(clazz, filters, entityManager, sorts, false, clazz);
     } else {
-      if (clazz.isAssignableFrom(UserSecurity.class) ||
-          clazz.isAssignableFrom(AccountRequest.class)) {
-        throw new SecurityException();
-      }
-      q = buildSecureQuery(clazz, filters, entityManager, sorts, false, clazz);
+      // user initiated actions...
+      q = buildSecureQuery(clazz, filters, entityManager, sorts, false, clazz, "read");
     }
 
     q.setMaxResults(rows);
@@ -181,7 +199,7 @@ public class ObjectServiceImpl implements ObjectService {
     if (privileged) {
       q = buildQuery(clazz, filters, entityManager, null, true, Long.class);
     } else {
-      q = buildSecureQuery(clazz, filters, entityManager, null, true, Long.class);
+      q = buildSecureQuery(clazz, filters, entityManager, null, true, Long.class, "read");
     }
     return q.getSingleResult();
   }
@@ -190,12 +208,13 @@ public class ObjectServiceImpl implements ObjectService {
   @Override
   @Transactional
   public Persisted insert(Persisted persisted) throws ObjectAlreadyHasIdException {
+    SecurityUtils.getSubject().checkPermission(persisted.getClass().getSimpleName() + ":create");
     if (persisted.getId() != null) {
       throw new ObjectAlreadyHasIdException("It is not permitted to specify the ID of a new object. Use update() for existing objects");
     }
     EntityManager entityManager = entityManagerProvider.get();
     AppUser actor;
-    actor = SYSTEM_USER; // todo: once we have authz put the real user here.
+    actor = SYSTEM_USER;
     log.debug("{} created by {}", persisted.getClass().getName(), actor);
     Instant now = Instant.now();
     persisted.setCreated(now);
@@ -208,6 +227,7 @@ public class ObjectServiceImpl implements ObjectService {
   @Override
   @Transactional
   public Persisted update(Persisted persistMe) {
+    SecurityUtils.getSubject().checkPermission(persistMe.getClass().getSimpleName() + ":update");
 
     log.debug("updating {}", persistMe);
     EntityManager entityManager = entityManagerProvider.get();
@@ -255,7 +275,7 @@ public class ObjectServiceImpl implements ObjectService {
 
   @Override
   public void delete(Class clazz, Long identifier) {
-    //todo: softdelete (full delete usually wrong)
+    //todo: soft delete (full delete usually wrong)
   }
 
   private <T extends Persisted, R> TypedQuery<R> buildQuery(
@@ -267,6 +287,9 @@ public class ObjectServiceImpl implements ObjectService {
       Class<R> retClazz) {
 
     StringBuilder qlString = new StringBuilder((count ? "select count(*) " : "") + "from " + clazz.getName());
+    if (filters.size() > 0) {
+      qlString.append(" where 1=1 ");
+    }
     addFilters(filters, qlString, clazz);
     addSorts(sorts, qlString, clazz);
     TypedQuery<R> q = entityManager.createQuery(qlString.toString(), retClazz);
@@ -274,23 +297,80 @@ public class ObjectServiceImpl implements ObjectService {
     return q;
   }
 
+  @SuppressWarnings("SameParameterValue")
   private <T extends Persisted, R> TypedQuery<R> buildSecureQuery(
       Class<T> clazz,
       List<Filter> filters,
       EntityManager entityManager,
       List<String> sorts,
       boolean count,
-      Class<R> retClazz) {
+      Class<R> retClazz,
+      String action) {
 
-    // TODO: Eventually this method also filters based on Authz info....
+    SecurityUtils.getSubject().checkPermission(new WildcardPermission(clazz.getSimpleName() + ":" + action));
 
     StringBuilder qlString = new StringBuilder((count ? "select count(*) " : "") + "from " + clazz.getName());
+
+    universalWhere(clazz, qlString);
     addFilters(filters, qlString, clazz);
     addSorts(sorts, qlString, clazz);
     TypedQuery<R> q = entityManager.createQuery(qlString.toString(), retClazz);
     applyParameterValues(filters, q);
+    String email = "nobody@example.com";
+    AppUser principal1 = getTopPrincipal();
+    if (principal1 != null) {
+      email = principal1.getUserEmail();
+    }
+    q.setParameter("email", email);
     return q;
   }
+
+  // shiro can track multiple principals for features such as impersonation.
+  // assume that the top one is the correct user for now since we're not doing
+  // anything nearly that fancy...
+  private AppUser getTopPrincipal() {
+    PrincipalCollection principals = SecurityUtils.getSubject().getPrincipals();
+    if (principals != null) {
+      for (Object principal : principals) {
+        if (principal instanceof AppUser) {
+          return (AppUser) principal;
+        }
+      }
+    }
+    return null;
+  }
+
+  private <T extends Persisted> void universalWhere(Class<T> clazz, StringBuilder qlString) {
+    AppUser u = getTopPrincipal();
+
+    List<Long> allowedIds = new ArrayList<>();
+    if (u != null) {
+      //noinspection Convert2streamapi
+      List<Permission> intrinsicPermissions = u.getIntrinsicPermissions();
+      if (intrinsicPermissions != null) {
+        for (Permission permission : intrinsicPermissions) {
+          if (permission.getType() != null && permission.getType().equals(clazz.getName())
+              && POS_INTEGER.matcher(permission.getObjId()).matches()) {
+            allowedIds.add(Long.valueOf(permission.getObjId()));
+          }
+        }
+      }
+    }
+
+    String specificPermittedIds = "";
+    if (allowedIds.size() > 0) {
+      String inWrapper = "id in (%s)";
+      // injection safe... came from our DB permissions and checked to be numeric above (just in case REST got fooled)
+      specificPermittedIds += " OR ( " + String.format(inWrapper, String.join(",", specificPermittedIds)) + " )";
+    }
+
+    qlString
+        .append(" where (")
+        .append(" (owner is null OR owner.userEmail = :email)")
+        .append(specificPermittedIds) // e.g. " OR (id in (1,2,3)"
+        .append(" )");
+  }
+
 
   private void applyParameterValues(List<Filter> filters, TypedQuery q) {
     int count = 0;
@@ -317,16 +397,24 @@ public class ObjectServiceImpl implements ObjectService {
   private void addFilters(List<Filter> filters, StringBuilder qlString, Class clazz) {
     if (filters != null && filters.size() > 0) {
       checkFilters(filters, clazz);
-      qlString.append(" where");
+      qlString.append(" AND ");
       addFiltersRaw(filters, qlString, clazz);
     }
   }
 
   private void checkFilters(List<Filter> filters, Class clazz) {
     List<Filter> invalidFilters = new ArrayList<>(filters);
+
+    // guard against injection and expensive requests...
     new FieldUtil().doForEachAnnotatedField(clazz, RestFilterEnable.class, (f, o) ->
         invalidFilters.removeIf((filter) -> f.getName().equals(filter.getField())), null);
-    if (invalidFilters.size() > 0) {
+
+    // Also guard against injection from property values.
+    boolean validOps = filters.stream().allMatch((f) ->
+        ObjectPropertyFilter.FILTER_OPER_PATTERN.matcher(f.getOperator()).matches());
+
+    // Note: filter values will be added as parameters to avoid injection.
+    if (invalidFilters.size() > 0 || !validOps) {
       throw new IllegalArgumentException("The following filters are not allowed:" + invalidFilters);
     }
   }
@@ -357,7 +445,7 @@ public class ObjectServiceImpl implements ObjectService {
         return f.getField() + " " + f.getOperator() + " :f" + count[0]++;
       }
     }).collect(Collectors.toList());
-    qlString.append(" ").append(StringUtils.join(clauses, " and "));
+    qlString.append(" ").append(StringUtils.join(clauses, " AND "));
   }
 
 

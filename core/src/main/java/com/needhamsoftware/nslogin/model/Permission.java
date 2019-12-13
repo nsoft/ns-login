@@ -37,7 +37,7 @@ import javax.persistence.Entity;
 public class Permission extends Persisted {
   private String type;
   private String action;
-  private String qualifier;
+  private String objId;
   private String field;
 
   public Permission() {}
@@ -49,11 +49,13 @@ public class Permission extends Persisted {
   }
 
   // override for more compelx permissions
+  @SuppressWarnings("WeakerAccess")
   protected String applyQualifier() {
-    return qualifier == null ? "" : ":" + qualifier;
+    return objId == null ? "" : ":" + objId;
   }
 
   // override for more compelx permissions
+  @SuppressWarnings("WeakerAccess")
   protected String applyField() {
     return field == null ? "" : ":" + field;
   }
@@ -74,12 +76,12 @@ public class Permission extends Persisted {
     this.action = name;
   }
 
-  public String getQualifier() {
-    return qualifier;
+  public String getObjId() {
+    return objId;
   }
 
-  public void setQualifier(String qualifier) {
-    this.qualifier = qualifier;
+  public void setObjId(String qualifier) {
+    this.objId = qualifier;
   }
 
   public String getField() {

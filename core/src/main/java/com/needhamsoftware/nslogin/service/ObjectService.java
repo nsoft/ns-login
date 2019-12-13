@@ -28,6 +28,8 @@ public interface ObjectService {
 
     <T extends Persisted> T get(Class<T> clazz, Long identifier);
 
+    <T extends Persisted> List<T> get(Class<T> clazz, List<Long> identifiers);
+
     Persisted getFresh(Class<? extends Persisted> clazz, Long identifier, boolean privileged);
 
     <T extends Persisted> List<T> list(Class<T> clazz, int start, int rows);

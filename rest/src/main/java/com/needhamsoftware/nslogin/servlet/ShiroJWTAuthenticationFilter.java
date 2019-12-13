@@ -18,6 +18,7 @@ package com.needhamsoftware.nslogin.servlet;
 
 import com.needhamsoftware.nslogin.model.AppUser;
 import com.needhamsoftware.nslogin.service.ObjectService;
+import io.jsonwebtoken.Claims;
 import org.apache.shiro.subject.ExecutionException;
 import org.apache.shiro.subject.PrincipalCollection;
 import org.apache.shiro.subject.SimplePrincipalCollection;
@@ -31,6 +32,9 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import java.io.IOException;
 
+import static com.needhamsoftware.nslogin.servlet.ServletUtils.*;
+
+@SuppressWarnings("CdiInjectionPointsInspection")
 @Singleton
 public class ShiroJWTAuthenticationFilter extends JwtAuthenticationFilter {
 
@@ -40,8 +44,9 @@ public class ShiroJWTAuthenticationFilter extends JwtAuthenticationFilter {
   @Override
   protected void proceed(ServletRequest request, ServletResponse response, FilterChain chain, Object principal) throws IOException, ServletException {
     // the subject in the JWT token is the email, we need need to look up the user by email.
-    String email = (String) principal;
-    AppUser user = ServletUtils.lookUpUserByEmail(objectService,email);
+    Claims claims = (Claims) principal;
+    AppUser user = lookUpUserByEmail(objectService,claims.getSubject());
+    user.setRoles(lookUpRolesByIdList(objectService, (String) claims.get(NSLOGIN_ROLES)));
     PrincipalCollection principals = new SimplePrincipalCollection(user, "rest");
     Subject subject = new Subject.Builder().principals(principals).buildSubject();
     try {

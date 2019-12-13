@@ -28,6 +28,8 @@ public class Persisted {
   @Version
   private long version;
   @ManyToOne
+  private AppUser owner;
+  @ManyToOne
   private AppUser createdBy;
   @ManyToOne
   private AppUser modifiedBy;

@@ -45,8 +45,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@SuppressWarnings("CdiInjectionPointsInspection")
 public class HibernateRealm extends AuthorizingRealm {
 
+  @SuppressWarnings("JpaQlInspection")
   private static final String FROM_USER_WHERE_EMAIL_PRINCIPAL = "from AppUser where email = :principal";
   @SuppressWarnings("unused")
   private static final Logger log = LogManager.getLogger();
@@ -57,7 +59,9 @@ public class HibernateRealm extends AuthorizingRealm {
   @Inject
   public HibernateRealm(CredentialsMatcher matcher) {
     super(matcher);
-    SecurityUtils.setSecurityManager( new DefaultWebSecurityManager());
+    DefaultWebSecurityManager securityManager = new DefaultWebSecurityManager();
+    securityManager.setRealm(this);
+    SecurityUtils.setSecurityManager(securityManager);
   }
 
   @SuppressWarnings("Convert2streamapi")

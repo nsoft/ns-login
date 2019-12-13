@@ -49,6 +49,8 @@ public class JwtAuthenticationFilter implements Filter, LoginConstants {
 
   private static final Logger log = LogManager.getLogger();
   private static final String ADMINISTRATOR = "Please contact your system administrator for assistance with your account.";
+  private static final String TOKEN = "com.needhamsoftware.nslogin.jwt";
+  private static final String CLAIMS = "com.needhamsoftware.nslogin.jwt.claims";
 
   private URL keyFetchUrl; // the url to the login servlet with a parameter that requests the public key for the given id
   private boolean redirectToLogin;
@@ -117,7 +119,7 @@ public class JwtAuthenticationFilter implements Filter, LoginConstants {
     // if we see the token process it and redirect to get rid of it.
     HttpSession session = req.getSession();
     if (session.getAttribute(PRINCIPAL) != null && token == null) {
-      proceed(request, response, chain, session.getAttribute(PRINCIPAL));
+      proceed(request, response, chain, session.getAttribute(CLAIMS));
       return;
     }
 
@@ -194,7 +196,8 @@ public class JwtAuthenticationFilter implements Filter, LoginConstants {
       // until their J2EE session expires or they manually log out which invalidates the session.
       session.removeAttribute(PRINCIPAL);
       session.setAttribute(PRINCIPAL, claimsJws.getBody().getSubject());
-      session.setAttribute("com.needhamsoftware.nslogin.jwt", token);
+      session.setAttribute(TOKEN, token);
+      session.setAttribute(CLAIMS, claimsJws.getBody());
       String originalDestination = (String) session.getAttribute(X_LOGIN_RETURN_TO);
       session.removeAttribute(X_LOGIN_RETURN_TO);
       if (StringUtils.isBlank(originalDestination)) {
