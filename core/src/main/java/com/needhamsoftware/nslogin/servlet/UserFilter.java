@@ -41,7 +41,7 @@ public class UserFilter implements Filter {
     HttpServletRequest req = (HttpServletRequest) request;
     AppUser siteUser = ServletUtils.lookUpPrincipal(req, objectService);
 
-    request.setAttribute("com.needhamsoftware.nslogin.SITE_USER",siteUser);
+    req.getSession().setAttribute("com.needhamsoftware.nslogin.SITE_USER",siteUser);
     chain.doFilter(request,response);
   }
 

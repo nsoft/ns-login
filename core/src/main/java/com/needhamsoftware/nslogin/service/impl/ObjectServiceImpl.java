@@ -50,21 +50,22 @@ import java.util.stream.Collectors;
 @Singleton
 public class ObjectServiceImpl implements ObjectService {
 
+  private static final String OWNER_ID_PARAM = "owner_id";
   private static Logger log = LogManager.getLogger();
   private static final Pattern POS_INTEGER = Pattern.compile("\\d+");
 
   @SuppressWarnings("CdiInjectionPointsInspection")
   @Inject
   private Provider<EntityManager> entityManagerProvider;
-  private AppUser SYSTEM_USER;
 
   @Override
   public void loadSystemUser() {
     EntityManager entityManager = entityManagerProvider.get();
 
     String qlString = "from AppUser where id=:id";
+    AppUser SYSTEM_USER;
     try {
-      SYSTEM_USER = (AppUser) entityManager
+      entityManager
           .createQuery(qlString)
           .setParameter("id", 1L)
           .getSingleResult();
@@ -75,13 +76,34 @@ public class ObjectServiceImpl implements ObjectService {
       SYSTEM_USER.setId(1L);
       // this makes it impossible for users to log in as system so long as LoginServlet continues
       SYSTEM_USER.setUserEmail(" ");                                    // to reject blank emails
+      // use the database to set this value directly and restart to recover from accidental
+      // lockout of admins due to bad permissions edits, etc.
       SYSTEM_USER.setUsername("SYSTEM");
       UserSecurity security = new UserSecurity();
-      // obviously one of the first tasks on deployment is to change this!
+      // If recovering from permissions problems via enabling system login, use an email you
+      // have access to above, and clear this out before restarting (in the DB also)
+      // Then after restart do the password dance. This avoids exposing yourself to hackers who
+      // have read this code and know this password.
       security.setPasswordHash(PasswordStandards.makeHashPw("$System123ABC"));
       SYSTEM_USER = entityManager.merge(SYSTEM_USER);
       security = entityManager.merge(security);
       SYSTEM_USER.setSecurityInfo(security);
+      Permission allPowers = new Permission();
+      allPowers.setAction("*");
+      allPowers.setField("*");
+      allPowers.setObjId("*");
+      allPowers.setType("*");
+      allPowers = entityManager.merge(allPowers);
+      Role superRole = new Role();
+      superRole.setKey("super_user");
+      superRole.setName("Full Control Super User");
+      superRole.setMembers(new ArrayList<>());
+      superRole.getMembers().add(SYSTEM_USER);
+      superRole.setGrants(new ArrayList<>());
+      superRole.getGrants().add(allPowers);
+      superRole = entityManager.merge(superRole);
+      entityManager.persist(allPowers);
+      entityManager.persist(superRole);
       entityManager.persist(security);
       entityManager.persist(SYSTEM_USER);
       try {
@@ -183,7 +205,9 @@ public class ObjectServiceImpl implements ObjectService {
       // this doesn't seem to always be effective, not sure why...
       q.setHint("javax.persistence.cache.retrieveMode", CacheRetrieveMode.BYPASS);
     }
-    return q.getResultList();
+    @SuppressWarnings("UnnecessaryLocalVariable") // useful for debugging
+    List<T> resultList = q.getResultList();
+    return resultList;
   }
 
 
@@ -214,7 +238,7 @@ public class ObjectServiceImpl implements ObjectService {
     }
     EntityManager entityManager = entityManagerProvider.get();
     AppUser actor;
-    actor = SYSTEM_USER;
+    actor = getTopPrincipal();
     log.debug("{} created by {}", persisted.getClass().getName(), actor);
     Instant now = Instant.now();
     persisted.setCreated(now);
@@ -267,6 +291,7 @@ public class ObjectServiceImpl implements ObjectService {
 
     Instant now = Instant.now();
     persistMe.setModified(now);
+    persistMe.setModifiedBy(getTopPrincipal());
 
     // new state introduced to the session here, hibernate will update DB if required
     return entityManager.merge(persistMe);
@@ -316,12 +341,12 @@ public class ObjectServiceImpl implements ObjectService {
     addSorts(sorts, qlString, clazz);
     TypedQuery<R> q = entityManager.createQuery(qlString.toString(), retClazz);
     applyParameterValues(filters, q);
-    String email = "nobody@example.com";
+    long id = -1;
     AppUser principal1 = getTopPrincipal();
     if (principal1 != null) {
-      email = principal1.getUserEmail();
+      id = principal1.getId();
     }
-    q.setParameter("email", email);
+    q.setParameter(OWNER_ID_PARAM, id);
     return q;
   }
 
@@ -366,7 +391,7 @@ public class ObjectServiceImpl implements ObjectService {
 
     qlString
         .append(" where (")
-        .append(" (owner is null OR owner.userEmail = :email)")
+        .append(" owner is null OR owner.id = :" + OWNER_ID_PARAM)
         .append(specificPermittedIds) // e.g. " OR (id in (1,2,3)"
         .append(" )");
   }
