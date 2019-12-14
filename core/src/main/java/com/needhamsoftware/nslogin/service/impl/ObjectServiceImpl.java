@@ -447,20 +447,21 @@ public class ObjectServiceImpl implements ObjectService {
 
   private <T extends Persisted> void universalWhere(Class<T> clazz, StringBuilder qlString, String specificPermittedIds) {
 
-    List<Long> allowedIds = new ArrayList<>();
-
-    String[] idStrs = specificPermittedIds.split(",");
-
-    for (String id : idStrs) {
-      allowedIds.add(Long.parseLong(id)); // parse them to ensure we can't be injected even if someone fools us!
-    }
-
     String idInClause = "";
-    if (allowedIds.size() > 0) {
-      // injection safe... came from our DB permissions and checked to be numeric above (just in case REST got fooled)
-      idInClause = " OR ( id in (" + String.join(",", idStrs) + " ) )";
-    }
+    if (StringUtils.isNotBlank(specificPermittedIds)) {
+      List<Long> allowedIds = new ArrayList<>();
 
+      String[] idStrs = specificPermittedIds.split(",");
+
+      for (String id : idStrs) {
+        allowedIds.add(Long.parseLong(id)); // parse them to ensure we can't be injected even if someone fools us!
+      }
+
+      if (allowedIds.size() > 0) {
+        // injection safe... came from our DB permissions and checked to be numeric above (just in case REST got fooled)
+        idInClause = " OR ( id in (" + String.join(",", idStrs) + " ) )";
+      }
+    }
     qlString
         .append(" where (")
         .append(" owner is null OR owner.id = :" + OWNER_ID_PARAM + " ")

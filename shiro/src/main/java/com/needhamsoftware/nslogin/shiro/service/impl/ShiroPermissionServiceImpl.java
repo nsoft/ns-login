@@ -99,7 +99,8 @@ public class ShiroPermissionServiceImpl implements PermissionService {
       List<String> objIds = allPerms.stream()
           .filter((p) ->
               (p.getType().equals(clazz.getSimpleName()) || "*".equals(p.getType())) &&
-                  (p.getAction().equals(action) || "*".equals(p.getAction())))
+                  (p.getAction().equals(action) || "*".equals(p.getAction())) &&
+                  p.getObjId() != null)
           .map(Permission::getObjId)
           .collect(Collectors.toList());
       if (!objIds.contains("*")) {

@@ -6,6 +6,7 @@ on a J2EE servlet container.
 
 * Redirect to login/logout
 * Single Sign On across J2EE contexts
+* Password reset via email
 * New user registration via email
 * _Optional_  REST system
   * JSOG encoded JSON for full object graph support
