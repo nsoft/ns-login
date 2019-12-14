@@ -20,6 +20,10 @@ import org.apache.shiro.authc.AuthenticationInfo;
 import org.apache.shiro.authc.AuthenticationToken;
 import org.apache.shiro.authc.credential.CredentialsMatcher;
 
+/**
+ * Not actually used, placeholder to keep shiro module happy. Shiro module only used to setup security session
+ * not for login.
+ */
 public class JWTCredentialsMatcher implements CredentialsMatcher {
   @Override
   public boolean doCredentialsMatch(AuthenticationToken token, AuthenticationInfo info) {

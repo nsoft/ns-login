@@ -1,7 +1,22 @@
 # NS Login
 
 A basic system designed to protect single page (Angular/etc) web pages deployed
-on a J2EE servlet container.
+on a J2EE servlet container. 
+
+* Redirect to login/logout
+* Single Sign On across J2EE contexts
+* New user registration
+* Password Login
+* _Optional_  REST system
+  * JSOG encoded JSON for full object graph support
+  * Object model with Hibernate mapping (Maria Db)
+  * Google Guice dependency injection
+  * Rest Envelope for error messages, 
+  * Websocket message channel
+  * Actions to specify complex operations beyond CRUD
+  * _Optional_ javascript library for simplified interaction and caching
+* _Optional_ Authorization via Apache Shiro with database backed permissions
+
 
 ## Motivation
 
@@ -88,7 +103,7 @@ unsuitable (or you have out grown it).
    to ensure that there's no chance of your system being fooled by half created
    users.
 1. **Password Reset App** - email based password reset with expiring tokens.
-1. **REST API stub** - (TODO), serving JSOG encoded object graphs for user objects including not
+1. **REST API stub** - serving JSOG encoded object graphs for user objects including not
    exposing sensitive info such as passwords, and properly breaking the chain of created_by
    and modified_by to avoid pulling back long graphs of users based on who created who.
 1. **Simple User Management App** - (TODO) using the rest api to manually add users,

@@ -95,6 +95,7 @@ public class JwtAuthenticationFilter implements Filter, LoginConstants {
     //                                                                               //
     ///////////////////////////////////////////////////////////////////////////////////
 
+
     if (!(request instanceof HttpServletRequest)) {
       // send blank response if request wasn't http some how.
       response.getWriter().println();
@@ -103,6 +104,25 @@ public class JwtAuthenticationFilter implements Filter, LoginConstants {
     }
     final HttpServletRequest req = (HttpServletRequest) request;
     final HttpServletResponse resp = (HttpServletResponse) response;
+
+    // First order of business, ensure that only css and js resources etc are cached, otherwise the
+    // Browser at a public web terminal may show content cached from a previous user and
+    // never even consult us about it!
+
+    String requestURI = req.getRequestURI();
+    // if you have some bizarre affinity for upper case file extensions add them yourself...
+    // also if you have other types of files that need to be cached by the browser...
+    if (!requestURI.endsWith(".js") &&
+        !requestURI.endsWith(".css") &&
+        !requestURI.endsWith(".jpg") &&
+        !requestURI.endsWith(".jpeg") &&
+        !requestURI.endsWith(".png")) { // don't cache
+          // Credits: https://stackoverflow.com/questions/49547/how-do-we-control-web-page-caching-across-all-browsers
+          resp.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // HTTP 1.1.
+          resp.setHeader("Pragma", "no-cache"); // HTTP 1.0.
+          resp.setHeader("Expires", "0"); // Proxies.
+        }  // ok to cache
+
 
     // are we logging out?
     String logout = req.getParameter("logout");
@@ -115,21 +135,7 @@ public class JwtAuthenticationFilter implements Filter, LoginConstants {
     // Did we just finish login?
     String token = req.getParameter(X_JWT_TOKEN); // did we just log in?
 
-    // are we already authenticated, and have a principle?
-    // note the token check is to avoid polluting the URL with the JWT token.
-    // if we see the token process it and redirect to get rid of it.
-    HttpSession session = req.getSession();
-    Object email = session.getAttribute(PRINCIPAL);
-    if (email != null && token == null) {
-      try {
-        proceed(request, response, chain, session.getAttribute(CLAIMS));
-      } catch (AuthzException e) {
-        log.fatal("User {} is authenticating successfully but un authorized to load themselves from the database",email );
-      }
-      return;
-    }
-
-    // fall back to cookie if it exists
+    // Use back to cookie if it exists
     if (token == null && !loggingOut) {
       Cookie[] cookies = req.getCookies();
       if (cookies != null) {
@@ -140,6 +146,27 @@ public class JwtAuthenticationFilter implements Filter, LoginConstants {
         }
       }
     }
+
+    HttpSession session = req.getSession();
+
+    if (token != null && !token.equals(session.getAttribute(TOKEN))) {
+      // User has logged out, new user logged in need a new session
+      session.invalidate();
+      session = req.getSession();
+    }
+
+    Object email = session.getAttribute(PRINCIPAL);
+
+    // are we already authenticated, and have a principle?
+    // note the token check is to avoid polluting the URL with the JWT token.
+    // if we see the token process it and redirect to get rid of it.
+
+    /* ****************************************************************** */
+    if (LOGIN_ACCEPTED(request, response, chain, session, email)) return;
+    /* ****************************************************************** */
+
+    // If we get here, something was missing, need to to reset everything and either redirect
+    // or try again, depending on whether or not we are meant to redirect
 
     if (token == null) {
       // no soup for you, talk to the hand.
@@ -183,7 +210,7 @@ public class JwtAuthenticationFilter implements Filter, LoginConstants {
       Cookie jwt = new Cookie(X_JWT_TOKEN, "");
       jwt.setMaxAge(0); // cookie to expire before session
       resp.addCookie(jwt);
-      if(redirectToLogin) {
+      if (redirectToLogin) {
         resp.sendRedirect("/login/?from=" + req.getRequestURL());
       } else {
         resp.sendError(401);
@@ -200,14 +227,14 @@ public class JwtAuthenticationFilter implements Filter, LoginConstants {
       // No Exception thrown so this token came from the service that was configured as our login url so
       // now we can trust it's claim about who the logged in user is. At this point we will now trust the user
       // until their J2EE session expires or they manually log out which invalidates the session.
-      session.removeAttribute(PRINCIPAL);
-      session.setAttribute(PRINCIPAL, claimsJws.getBody().getSubject());
+      email = claimsJws.getBody().getSubject();
+      session.setAttribute(PRINCIPAL, email);
       session.setAttribute(TOKEN, token);
       session.setAttribute(CLAIMS, claimsJws.getBody());
       String originalDestination = (String) session.getAttribute(X_LOGIN_RETURN_TO);
       session.removeAttribute(X_LOGIN_RETURN_TO);
       if (StringUtils.isBlank(originalDestination)) {
-        originalDestination = req.getRequestURI();
+        originalDestination = requestURI;
       }
       Cookie uid = new Cookie("nslogin-uid", claimsJws.getBody().getSubject());
       uid.setPath("/");
@@ -217,14 +244,41 @@ public class JwtAuthenticationFilter implements Filter, LoginConstants {
       jwt.setMaxAge(session.getMaxInactiveInterval() - 5); // cookie to expire before session
       jwt.setPath("/");
       resp.addCookie(jwt);
-      resp.sendRedirect(originalDestination); // finally go to the original url with query params restored
-      return;
-    } catch (IllegalArgumentException | JwtException e) {
+      if (redirectToLogin) {
+        resp.sendRedirect(originalDestination); // finally go to the original url with query params restored
+      } else {
+
+        /* ****************************************************************** */
+        if (LOGIN_ACCEPTED(request, response, chain, session, email)) {
+          return;
+        } else  {
+          throw new RuntimeException();
+        }
+        /* ****************************************************************** */
+
+      }
+    } catch (Exception e) {
       // reveal nothing
       log.error(e);
       errorToLogin(resp);
-      return;
     }
+  }
+
+  /**
+   * This is the critical bit. Call this when we think we are ready to log in.
+   */
+  private boolean LOGIN_ACCEPTED(ServletRequest request, ServletResponse response, FilterChain chain, HttpSession session, Object email) throws IOException, ServletException {
+    Object claims = session.getAttribute(CLAIMS);
+    Object attribute = session.getAttribute(TOKEN);
+    if (email != null && attribute != null && claims != null) {
+      try {
+        proceed(request, response, chain, claims);
+      } catch (AuthzException e) {
+        log.fatal("User {} is authenticating successfully but un authorized to load themselves from the database", email);
+      }
+      return true;
+    }
+    return false;
   }
 
   protected void logout(HttpServletRequest req) {
