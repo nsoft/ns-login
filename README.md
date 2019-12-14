@@ -129,6 +129,66 @@ repository, and then check it into your own repo to bootstrap your repository.
 It is expected that you be facile with J2EE and web concepts like web.xml files
 request redirection, and Object Relational Mapping.
 
+### Things to Configure
+
+#### Email
+You should configure your server with a JNDI email service that can be found by 
+this code (or tweak this code in the apps to your preference):
+```$java
+    Context initCtx;
+    try {
+      initCtx = new InitialContext();
+      Context envCtx = (Context) initCtx.lookup("java:comp/env");
+      session = (Session) envCtx.lookup("mail/Session");
+    } catch (NamingException e) {
+      e.printStackTrace();
+      throw new ServletException(e);
+    }
+```
+#### Database 
+
+You will want to configure hibernate to talk to your database. The configuration can
+be found here, and you should edit it to something more secure: 
+
+https://github.com/nsoft/ns-login/blob/master/core/src/main/resources/META-INF/persistence.xml
+
+#### Securing Existing Applications
+
+You can add this system to existing apps/contexts by adding the following filter
+```$xml
+    <filter>
+        <filter-name>jwt-auth</filter-name>
+        <filter-class>com.needhamsoftware.nslogin.servlet.JwtAuthenticationFilter</filter-class>
+        <init-param>
+            <param-name>keyFetchUrl</param-name>
+            <param-value>http://localhost:8080/login/service?kid=</param-value>
+        </init-param>
+        <init-param>
+            <param-name>redirectToLogin</param-name>
+            <param-value>true</param-value>
+        </init-param>
+    </filter>
+    <filter-mapping>
+        <filter-name>jwt-auth</filter-name>
+        <url-pattern>*</url-pattern>
+    </filter-mapping>
+```
+`keyFetchUrl` must point to the login service and end in `?kid=`. `redirectToLogin` controls whether 
+the request is redirected, or simply receives a 401 unauthorized. The latter is desirable for 
+Ajax calls so that the javascript calling the ajax can redirect to login. Without this users with 
+expired sessions attempting my experience unresponsive pages.
+
+#### Browser Caching
+By default any non css, js png or jpeg resource wrapped by the authentication filter is 
+not cached. This is controled by the code here, which should be edited to suit your needs.
+Please do not submit patches to change this list. A patch to make it configurable might be 
+of interest however.
+
+https://github.com/nsoft/ns-login/blob/master/core/src/main/java/com/needhamsoftware/nslogin/servlet/JwtAuthenticationFilter.java#L115
+
+JS/CSS obfuscation/mimimization and preventing cached copies after a new release is an
+exercise left to the reader.
+
 ## Auth Styles
 
 The default setup is for an app like Facebook or Gmail that offers zero functionality to 
