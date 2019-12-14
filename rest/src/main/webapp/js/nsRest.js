@@ -269,7 +269,10 @@
         if (this.type === 'checkbox') {
           obj[fieldName] = $(this).is(":checked");
         } else {
-          obj[fieldName] = $(this).val();
+          let val = $(this).val();
+          if ("" !== val){
+            obj[fieldName] = val;
+          }
         }
       }
     });

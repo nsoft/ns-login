@@ -182,6 +182,18 @@
       }, 999, 0);
 
       return false;
+    });
+    $("#reverseThings").click(function (evt) {
+      evt.preventDefault();
+      let $form = $("#ttForm");
+      let id = $form.find("#test_id").val();
+      let thing = REST.lookup("TestThing", id);
+      if (thing) {
+        REST.update("TestThing",thing,function () {
+          REST.refreshPage($form);
+        }, "reverse_things") // should invert the order of the "things"
+      }
+      return false;
     })
   });
 
@@ -194,6 +206,8 @@
       let subThings = thing.someThings;
       let count = 1;
       for (const t of subThings) {
+        // should colorize basedo on the order within the collection reverse_things action should
+        // cause the colors to flip direction.
         $this.find("#item_" + t.id).closest("tr").css("background","rgb(200," + (100 + 20*count++) + ",200)");
       }
     }

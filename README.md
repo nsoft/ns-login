@@ -14,7 +14,7 @@ on a J2EE servlet container.
   * Google Guice dependency injection
   * Rest Envelope for error messages, 
   * Websocket message channel
-  * _WIP: Actions to specify complex operations beyond CRUD_
+  * Actions to specify complex server side operations beyond CRUD
   * _Optional_ javascript library for simplified interaction and caching
 * _Optional_ Authorization via Apache Shiro with database backed permissions
 * _Comming Soon: Optional web UI for simple user management_

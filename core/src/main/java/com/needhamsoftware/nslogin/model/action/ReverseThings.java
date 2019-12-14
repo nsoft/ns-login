@@ -16,16 +16,25 @@
 
 package com.needhamsoftware.nslogin.model.action;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.needhamsoftware.nslogin.model.Action;
+import com.needhamsoftware.nslogin.model.ActionInvocation;
 import com.needhamsoftware.nslogin.model.TestThing;
+import com.needhamsoftware.nslogin.service.ActionVisitor;
 import com.needhamsoftware.nslogin.service.ObjectService;
+import com.voodoodyne.jackson.jsog.JSOGGenerator;
 
+import javax.persistence.Entity;
 import java.util.Collections;
 import java.util.List;
 
 /**
  * A demonstration action, should be removed
  */
+@Entity
+@JsonIdentityInfo(generator= JSOGGenerator.class)
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class ReverseThings extends Action {
   @Override
   public void prePersist(List<Object> objectsActedUpon) {
@@ -36,6 +45,11 @@ public class ReverseThings extends Action {
   @Override
   public void postPersist(List<Object> objectsActedUpon) {
 
+  }
+
+  @Override
+  public ActionInvocation accept(ActionVisitor visitor) {
+    return visitor.visit(this);
   }
 
   private Objects findObjs(List<Object> objectsActedUpon) {
@@ -49,10 +63,10 @@ public class ReverseThings extends Action {
       }
     }
     if (o.thing == null) {
-      throw new IllegalArgumentException("Internal Error: no AnswerGiven object supplied");
+      throw new IllegalArgumentException("Internal Error: no TestThing object supplied");
     }
     if(o.oserv == null) {
-      throw new RuntimeException("Internal Error: GiveAnswerAction did not receive an ObjectService");
+      throw new RuntimeException("Internal Error: ReverseThings did not receive an ObjectService");
     }
     return o;
   }

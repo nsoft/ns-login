@@ -23,6 +23,7 @@ import com.needhamsoftware.nslogin.AuthzException;
 import com.needhamsoftware.nslogin.FieldUtil;
 import com.needhamsoftware.nslogin.PasswordStandards;
 import com.needhamsoftware.nslogin.model.*;
+import com.needhamsoftware.nslogin.model.action.ReverseThings;
 import com.needhamsoftware.nslogin.service.Filter;
 import com.needhamsoftware.nslogin.service.ObjectService;
 import com.needhamsoftware.nslogin.service.PermissionService;
@@ -98,21 +99,42 @@ public class ObjectServiceImpl implements ObjectService {
       allPowers = entityManager.merge(allPowers);
       Role superRole = roleSuperUser(entityManager, SYSTEM_USER, allPowers);
 
+      // the super-user
       entityManager.persist(allPowers);
       entityManager.persist(superRole);
       entityManager.persist(security);
       entityManager.persist(SYSTEM_USER);
 
-      // actions
-
+      // general permissions
       Permission readThings = permReadThings();
       Permission readUsers = permReadUsers();
       Permission updateThings = permUpdateThings();
       Permission updateUsers = permUpdateUsers();
       Permission createThings = permCreateThings();
+      Permission readActions = permReadActions();
 
-      roleAdmin(entityManager, List.of(readThings, readUsers, createThings, updateThings, updateUsers));
-      roleThingReader(entityManager, List.of(readThings));
+      // roles
+
+      roleAdmin(entityManager, List.of(
+          readThings,
+          readUsers,
+          readActions,
+          createThings,
+          updateThings,
+          updateUsers
+      ));
+      roleThingReader(entityManager, List.of(
+          readThings
+      ));
+
+      // actions
+
+      // An example action that requires a permission to execute
+      // in this case people who can update TestThing can invert the
+      // order of the collection. (on the server side) This is a trivial
+      // example, but it demonstrates the ability to perform server side
+      // actions
+      actionReverseThings(entityManager, List.of(updateThings));
 
       try {
         tx.commit();
@@ -144,6 +166,7 @@ public class ObjectServiceImpl implements ObjectService {
     role.setMembers(new ArrayList<>());
     role.setGrants(new ArrayList<>());
     for (Permission power : powers) {
+      entityManager.persist(power);
       role.getGrants().add(power);
     }
     entityManager.merge(role);
@@ -156,9 +179,21 @@ public class ObjectServiceImpl implements ObjectService {
     role.setMembers(new ArrayList<>());
     role.setGrants(new ArrayList<>());
     for (Permission power : powers) {
+      entityManager.persist(power);
       role.getGrants().add(power);
     }
     entityManager.merge(role);
+  }
+
+  private void actionReverseThings(EntityManager em, List<Permission> required) {
+    ReverseThings rt = new ReverseThings();
+    rt.setName("reverse_things");
+    rt.setRequires(new ArrayList<>());
+    for (Permission permission : required) {
+      em.persist(permission);
+      rt.getRequires().add(permission);
+    }
+    em.merge(rt);
   }
 
   private Permission permAllPowers() {
@@ -195,6 +230,13 @@ public class ObjectServiceImpl implements ObjectService {
     Permission allPowers = new Permission();
     allPowers.setAction("read");
     allPowers.setType("AppUser");
+    return allPowers;
+  }
+
+  private Permission permReadActions() {
+    Permission allPowers = new Permission();
+    allPowers.setAction("read");
+    allPowers.setType("Action");
     return allPowers;
   }
 

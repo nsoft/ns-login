@@ -54,7 +54,7 @@ public class ShiroPermissionServiceImpl implements PermissionService {
   public void checkPerms(List<Permission> permissions) throws NotPermittedException {
     Subject currentUser = SecurityUtils.getSubject();
     for (Permission permission : permissions) {
-      if (!currentUser.isPermitted(permission.shiroString())) {
+      if (!currentUser.isPermitted(new DoubleWildcardPermission(permission.shiroString()))) {
         throw new NotPermittedException(permission);
       }
     }

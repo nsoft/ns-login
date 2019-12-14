@@ -21,7 +21,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.needhamsoftware.nslogin.service.ActionVisitor;
 import com.voodoodyne.jackson.jsog.JSOGGenerator;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.ManyToMany;
 import java.util.List;
 
 @Entity
@@ -30,6 +32,7 @@ import java.util.List;
 public abstract class Action extends Persisted {
 
   @Column(unique = true)
+  @RestFilterEnable
   private String name;
   @ManyToMany
   private List<Permission> requires;
@@ -45,9 +48,7 @@ public abstract class Action extends Persisted {
   public abstract void postPersist(List<Object> objectsActedUpon);
 
 
-  public ActionInvocation accept(ActionVisitor visitor) {
-    return visitor.visit(this);
-  }
+  public abstract ActionInvocation accept(ActionVisitor visitor) ;
 
   public List<Permission> getRequires() {
     return requires;
