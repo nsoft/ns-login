@@ -1,4 +1,5 @@
 # NS Login
+[![License](https://img.shields.io/badge/license-Apache%202.0-B70E23.svg?style=plastic)](http://www.opensource.org/licenses/Apache-2.0)
 
 A basic system designed to protect single page (Angular/etc) web pages deployed
 on a J2EE servlet container. 
@@ -17,6 +18,17 @@ on a J2EE servlet container.
 * _Optional_ Authorization via Apache Shiro with database backed permissions
 * _Comming Soon: Optional web UI for simple user management_
 
+The basic login/logout features can be added to any existing application by adding a servlet 
+filter. Shiro Authorization presently requires a Guice environment. Any of the supplied
+applications can be deployed on separate physical machines though you will want to 
+pay attention to Same Origin Policy issues and perhaps proxy some of them through the same
+top level url, or if your are brave, properly configure CORS.
+
+https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy
+
+Also note that XSS and CSRF security is not attempted here and that is your application's 
+responsibility to handle. If you don't know what XSS and CSRF are, stop everything, right now
+and go research them.
 
 ## Motivation
 
@@ -229,10 +241,12 @@ into accepting the attacker as an arbitrary user (and if authorization is includ
 privileges). 
 
 This is not an "if" but a "when", and more CPU and memory can be applied to reduce the time
-it takes to do reverse engineer the private key. CPU and memory are limited primary by available
+it takes to do reverse engineer the private key. CPU and memory are limited primarily by available
 funding in the real world so the goal is not to make cracking the system impossible, just 
 prohibitively expensive. Increasing the key complexity and reducing the validity period of the
 key are the two ways to increase the cost of hacking the encryption used for the JWT tokens. 
+
+**Note:** Increasing key complexity also raises the work YOUR system must do to log users in.
 
 To facilitate keeping up with the ever increasing availability of computing resources the 
 algorithm is easily changed via LoginConstants, which defines the algorithm used, the 
