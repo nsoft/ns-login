@@ -5,17 +5,17 @@ on a J2EE servlet container.
 
 * Redirect to login/logout
 * Single Sign On across J2EE contexts
-* New user registration
-* Password Login
+* New user registration via email
 * _Optional_  REST system
   * JSOG encoded JSON for full object graph support
   * Object model with Hibernate mapping (Maria Db)
   * Google Guice dependency injection
   * Rest Envelope for error messages, 
   * Websocket message channel
-  * Actions to specify complex operations beyond CRUD
+  * _WIP: Actions to specify complex operations beyond CRUD_
   * _Optional_ javascript library for simplified interaction and caching
 * _Optional_ Authorization via Apache Shiro with database backed permissions
+* _Comming Soon: Optional web UI for simple user management_
 
 
 ## Motivation
