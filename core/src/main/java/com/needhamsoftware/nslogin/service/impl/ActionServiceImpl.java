@@ -16,12 +16,11 @@
 
 package com.needhamsoftware.nslogin.service.impl;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.needhamsoftware.nslogin.model.Action;
 import com.needhamsoftware.nslogin.model.ActionInvocation;
+import com.needhamsoftware.nslogin.model.action.ReverseThings;
 import com.needhamsoftware.nslogin.service.ActionService;
 import com.needhamsoftware.nslogin.service.ObjectService;
-
 
 import javax.inject.Inject;
 
@@ -30,23 +29,16 @@ public class ActionServiceImpl implements ActionService {
   @Inject
   ObjectService objectService;
 
-  @Inject
-  ObjectMapper objectMapper;
-
   @Override
   public ActionInvocation visit(Action action) {
     return new ActionInvocation(action);
   }
 
-
-
-//  @Override
-//  public ActionInvocation visit(GiveFeedbackAction action) {
-//    ActionInvocation invocation = new ActionInvocation(action);
-//    invocation.getObjectsActedUpon().add(objectService);
-//    invocation.getObjectsActedUpon().add(emailService);
-//    return invocation;
-//  }
-
+  @Override
+  public ActionInvocation visit(ReverseThings action) {
+    ActionInvocation invocation = new ActionInvocation(action);
+    invocation.getObjectsActedUpon().add(objectService);
+    return invocation;
+  }
 
 }

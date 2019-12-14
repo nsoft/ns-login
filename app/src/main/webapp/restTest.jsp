@@ -19,6 +19,7 @@
 <html>
 <head>
   <title>Rest Tester JSP</title>
+  <%--suppress JspAbsolutePathInspection --%>
   <link type="text/css" rel="stylesheet" href="/test.css">
 </head>
 <body>
@@ -30,13 +31,15 @@
   <p>Below a table of users and their id's should appear</p>
   <table data-type="AppUser">
     <thead>
-    <th></th>
-    <th>ID</th>
-    <th>User Name</th>
+    <tr>
+      <th></th>
+      <th>ID</th>
+      <th>User Name</th>
+    </tr>
     </thead>
     <tbody>
     <tr class="rowTemplate">
-      <td data-render="checkBoxId"></td>
+      <td data-render="checkBoxId">id</td>
       <td>id</td>
       <td>username</td>
     </tr>
@@ -48,7 +51,8 @@
   <div>
     <app:messages/>
   </div>
-  <form data-type="TestThing" data-method="POST" onsubmit="REST.submit">
+
+  <form id="ttForm" data-type="TestThing" data-method="POST" onsubmit="REST.submit">
     <table>
       <tr>
         <td><label for="test_id">Id:</label> </td>
@@ -76,7 +80,11 @@
   </form>
 
   <h2>Test things</h2>
-  <table data-type="TestThing">
+  <button id="newThing">New</button>
+  <button id="addSomeThings">Add some TestThings to above TestThing</button>
+  <button id="reverseThings">Reverse Action</button>
+
+  <table id="ttTable" data-type="TestThing" data-post-render="ttTableHighlight">
     <thead>
     <tr>
       <th></th>
@@ -91,7 +99,7 @@
     </thead>
     <tbody>
     <tr class="rowTemplate">
-      <td data-render="checkBoxId"></td>
+      <td data-render="checkBoxId">id</td>
       <td>id</td>
       <td>anInt</td>
       <td>aDouble</td>
@@ -121,11 +129,12 @@
 <script src="https://cdn.jsdelivr.net/npm/js-cookie@2/src/js.cookie.min.js"></script>
 <script type="text/javascript">
   jQuery(document).ready(function () {
+    REST.addPostRender("ttTableHighlight", highlightRowsForTestThingDisplayed);
     // a very very simple validation that the rest framework is (or is not up and running)
     // see restTest.jsp for more complete testing
     if (REST) {
       //alert('foo');
-      let email = Cookies.get("nslogin-uid"); // todo: probably should make this parse the token and remove this cookie
+      let email = Cookies.get("nslogin-uid");
       //alert(email)
       REST.find("AppUser", "userEmail='" + email + "\'", function (data) {
         if (data && data.length && data.length > 0) {
@@ -134,15 +143,61 @@
       }, 1)
     }
     $('#wsTestBtn').click(function (evt) {
+      evt.preventDefault();
       REST_SOCKET.send("test");
       return false;
-    })
-    $("#test_id").on("change", function (evt) {
+    });
+    $("#test_id").on("change", function () {
       let $testId = $("#test_id");
-      $testId.closest("*[data-type]").attr("data-id", $testId.val())
+      $testId.closest("*[data-type]").attr("data-id", $testId.val());
       REST.refreshPage($testId)
+    });
+    $("#newThing").click(function (evt) {
+      evt.preventDefault();
+      REST.create("TestThing", {}, function () {
+        let $testId = $("#test_id");
+        REST.refreshPage($testId)
+      });
+      return false;
+    });
+    $("#addSomeThings").click(function (evt) {
+      evt.preventDefault();
+      let $form = $("#ttForm");
+      let id = $form.attr("data-id");
+      let object = REST.objectify($form, REST.lookup("TestThing", id));
+      let ids = [];
+      let $ttTable = $("#ttTable");
+      let find = $ttTable.find('input[type="checkbox"]:checked');
+      find.each(function () {
+        let item = this.id.substr(5);
+        ids.push(item);
+      });
+      //todo: should add filters to REST.list for this
+      REST.find("TestThing", "id in '" + ids.join()+"'", function (data) {
+        object["someThings"] = data;
+        REST.update("TestThing", object, function () {
+          let $testId = $("#test_id");
+          REST.refreshPage($testId)
+        });
+      }, 999, 0);
+
+      return false;
     })
-  })
+  });
+
+  function highlightRowsForTestThingDisplayed() {
+    let $this = $("#ttTable");
+    let $form = $("#ttForm");
+    let id = $form.find("#test_id").val();
+    let thing = REST.lookup("TestThing", id);
+    if (thing) {
+      let subThings = thing.someThings;
+      let count = 1;
+      for (const t of subThings) {
+        $this.find("#item_" + t.id).closest("tr").css("background","rgb(200," + (100 + 20*count++) + ",200)");
+      }
+    }
+  }
 </script>
 </body>
 </html>

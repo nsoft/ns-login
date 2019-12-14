@@ -17,6 +17,7 @@
 package com.needhamsoftware.nslogin.servlet;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.needhamsoftware.nslogin.AuthzException;
 import com.needhamsoftware.nslogin.model.AppUser;
 import com.needhamsoftware.nslogin.model.Notification;
 import com.needhamsoftware.nslogin.service.Filter;
@@ -67,7 +68,6 @@ public class PendingNotificationsServlet extends ServletBase {
   @Inject
   private ObjectMapper mapper;
 
-  private ServletUtils servletUtils = new ServletUtils();
 
   @Override
   protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
@@ -86,17 +86,26 @@ public class PendingNotificationsServlet extends ServletBase {
 
       resp.setContentType("application/json");
       resp.getWriter().write("{}"); // silly bogus output to keep jquery happy.}
-    }catch (Exception e) {
-      servletUtils.handleError(resp, 500, mapper);
+    } catch (Exception e) {
+      ServletUtils.handleError(resp, 500, mapper);
       log.error("ERR:", e);
     }
   }
 
   private void notify(List<Filter> filters) {
-    List notificationsToSend = objectService.list(Notification.class, 0, Integer.MAX_VALUE, filters, null, true);
-    for (Object o : notificationsToSend) {
-      Notification n = (Notification) o;
-      Messages.DO.send(n);
+    List notificationsToSend = null;
+    try {
+      notificationsToSend = objectService.list(Notification.class, 0, Integer.MAX_VALUE, filters, null, true);
+    } catch (AuthzException e) {
+      log.debug(e);
+      Messages.DO.sendErrorMessage("Insufficient Access Rights");
+    }
+    if (notificationsToSend != null) {
+      for (Object o : notificationsToSend) {
+        Notification n = (Notification) o;
+        Messages.DO.send(n);
+      }
     }
   }
 }
+

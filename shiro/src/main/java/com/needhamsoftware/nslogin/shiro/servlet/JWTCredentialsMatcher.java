@@ -14,7 +14,7 @@
  *    limitations under the License.
  */
 
-package com.needhamsoftware.nslogin.servlet;
+package com.needhamsoftware.nslogin.shiro.servlet;
 
 import org.apache.shiro.authc.AuthenticationInfo;
 import org.apache.shiro.authc.AuthenticationToken;

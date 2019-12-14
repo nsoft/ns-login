@@ -16,6 +16,7 @@
 
 package com.needhamsoftware.nslogin.service;
 
+import com.needhamsoftware.nslogin.AuthzException;
 import com.needhamsoftware.nslogin.model.Persisted;
 import com.needhamsoftware.nslogin.service.impl.ObjectAlreadyHasIdException;
 
@@ -24,7 +25,7 @@ import java.util.List;
 @SuppressWarnings("SameParameterValue")
 public interface ObjectService {
 
-    void loadSystemUser();
+    void initSystem();
 
     <T extends Persisted> T get(Class<T> clazz, Long identifier);
 
@@ -32,21 +33,21 @@ public interface ObjectService {
 
     Persisted getFresh(Class<? extends Persisted> clazz, Long identifier, boolean privileged);
 
-    <T extends Persisted> List<T> list(Class<T> clazz, int start, int rows);
+    <T extends Persisted> List<T> list(Class<T> clazz, int start, int rows) throws AuthzException;
 
-    <T extends Persisted> List<T> list(Class<T> clazz, int start, int rows, boolean privileged);
+    <T extends Persisted> List<T> list(Class<T> clazz, int start, int rows, boolean privileged) throws AuthzException;
 
-    <T extends Persisted> List<T> list(Class<T> clazz, int start, int rows, List<Filter> filters, List<String> sorts);
+    <T extends Persisted> List<T> list(Class<T> clazz, int start, int rows, List<Filter> filters, List<String> sorts) throws AuthzException;
 
-    <T extends Persisted> List<T> list(Class<T> clazz, int start, int rows, List<Filter> filters, List<String> sorts, boolean privileged);
+    <T extends Persisted> List<T> list(Class<T> clazz, int start, int rows, List<Filter> filters, List<String> sorts, boolean privileged) throws AuthzException;
 
-    Long count(Class<? extends Persisted> clazz, List<Filter> filters);
+    Long count(Class<? extends Persisted> clazz, List<Filter> filters) throws AuthzException;
 
-    Long count(Class<? extends Persisted> clazz, List<Filter> filters, boolean privileged);
+    Long count(Class<? extends Persisted> clazz, List<Filter> filters, boolean privileged) throws AuthzException;
 
-    Persisted insert(Persisted persisted) throws ObjectAlreadyHasIdException;
+    Persisted insert(Persisted persisted) throws ObjectAlreadyHasIdException, AuthzException;
 
-    Persisted update(Persisted persisted);
+    Persisted update(Persisted persisted) throws AuthzException;
 
 
     void delete(Class clazz, Long identifer);

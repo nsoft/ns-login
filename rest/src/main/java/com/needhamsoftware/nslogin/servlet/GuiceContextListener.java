@@ -29,14 +29,17 @@ import com.google.inject.spi.TypeListener;
 import com.needhamsoftware.nslogin.PersistenceUtil;
 import com.needhamsoftware.nslogin.guice.ObjectServiceWrapper;
 import com.needhamsoftware.nslogin.hibernate.HibernateUtil;
+import com.needhamsoftware.nslogin.service.ActionService;
 import com.needhamsoftware.nslogin.service.MessageService;
 import com.needhamsoftware.nslogin.service.ObjectService;
+import com.needhamsoftware.nslogin.service.PermissionService;
+import com.needhamsoftware.nslogin.service.impl.ActionServiceImpl;
 import com.needhamsoftware.nslogin.service.impl.MessageServiceImpl;
-import com.needhamsoftware.nslogin.shiro.HibernateRealm;
+import com.needhamsoftware.nslogin.shiro.service.impl.ShiroPermissionServiceImpl;
+import com.needhamsoftware.nslogin.shiro.servlet.HibernateShiroWebModule;
+import com.needhamsoftware.nslogin.shiro.servlet.ShiroJWTAuthenticationFilter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.shiro.authc.credential.CredentialsMatcher;
-import org.apache.shiro.guice.web.ShiroWebModule;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
@@ -54,25 +57,23 @@ import java.util.Map;
 import java.util.Set;
 
 
+@SuppressWarnings("Convert2Lambda")
 public class GuiceContextListener extends GuiceServletContextListener {
-
 
   private static Logger log = LogManager.getLogger();
 
-  private static final ThreadLocal<EntityManager> ENTITY_MANAGER_CACHE
-      = new ThreadLocal<>();
+  private static final ThreadLocal<EntityManager> ENTITY_MANAGER_CACHE = new ThreadLocal<>();
 
   @Inject
   private static ObjectService objectService;
   private ServletContext ctx;
   private Injector injector;
 
-
   @Override
   public void contextInitialized(ServletContextEvent servletContextEvent) {
     ctx = servletContextEvent.getServletContext();
     super.contextInitialized(servletContextEvent);
-    objectService.loadSystemUser();
+    objectService.initSystem();
   }
 
   @SuppressWarnings("unchecked")
@@ -118,17 +119,31 @@ public class GuiceContextListener extends GuiceServletContextListener {
               bind(PersistenceUtil.class).to(HibernateUtil.class);
               bind(ObjectService.class).to(ObjectServiceWrapper.class);
               bind(MessageService.class).to(MessageServiceImpl.class);
-
-              ObjectMapper mapper = new ObjectMapper();
-              mapper.findAndRegisterModules();
-              bind(ObjectMapper.class).toProvider(() -> mapper);
+              bind(PermissionService.class).to(ShiroPermissionServiceImpl.class);
+              bind(ObjectMapper.class).toProvider(setupObjectMapper());
+              bind(ActionService.class).to(ActionServiceImpl.class);
 
               // do our static injections before we serve up any requests
               requestStaticInjection(GuiceContextListener.class);
               requestStaticInjection(Messages.class);
 
               super.configureServlets();
+
               install(new JpaPersistModule("app"));
+              issue598();
+
+              serve("/api/*").with(RestServlet.class);
+              serve("/messages/*").with(PendingNotificationsServlet.class);
+
+              filter("/*").through(PersistFilter.class);
+              filter("/*").through(ShiroJWTAuthenticationFilter.class, authFilterParams());
+              filter("/*").through(ActionFilter.class);
+              filter("/*").through(UserFilter.class);
+              filter("/*").through(MessageCollectionFilter.class);
+              filter("/socket/*").through(WebSocketFilter.class);
+            }
+
+            private void issue598() {
               // working around https://github.com/google/guice/issues/598
               final InjectionListener<PersistService> injectionListener = PersistService::start;
               TypeListener persistServiceListener = new TypeListener() {
@@ -141,42 +156,34 @@ public class GuiceContextListener extends GuiceServletContextListener {
                 }
               };
 
-              bindListener(new AbstractMatcher<>() {
+              AbstractMatcher<TypeLiteral<?>> typeMatcher = new AbstractMatcher<>() {
                 @Override
                 public boolean matches(TypeLiteral<?> typeLiteral) {
                   return PersistService.class.isAssignableFrom(typeLiteral.getRawType());
                 }
-              }, persistServiceListener);
+              };
+              bindListener(typeMatcher, persistServiceListener);
+            }
 
-              serve("/api/*").with(RestServlet.class);
+            private Provider<ObjectMapper> setupObjectMapper() {
+              ObjectMapper mapper = new ObjectMapper();
+              mapper.findAndRegisterModules();
+              return new Provider<>() {
+                @Override
+                public ObjectMapper get() {
+                  return mapper;
+                }
+              };
+            }
 
-              serve("/messages/*").with(PendingNotificationsServlet.class);
-
-              filter("/*").through(PersistFilter.class);
+            private Map<String, String> authFilterParams() {
               Map<String,String> params = new HashMap<>();
               params.put("keyFetchUrl", "http://localhost:8080/login/service?kid=");
               params.put("redirectToLogin", "false");
-              //filter("/*").through(ShiroFilter.class);
-              filter("/*").through(ShiroJWTAuthenticationFilter.class, params);
-              filter("/*").through(UserFilter.class);
-              filter("/*").through(MessageCollectionFilter.class);
-              filter("/socket/*").through(WebSocketFilter.class);
+              return params;
             }
           },
-          new ShiroWebModule(GuiceContextListener.this.ctx) {
-            @Override
-            protected void configureShiroWeb() {
-              try {
-                bindRealm().toConstructor(HibernateRealm.class.getConstructor(CredentialsMatcher.class));
-              } catch (NoSuchMethodException e) {
-                addError(e);
-              }
-            }
-            @Provides
-            CredentialsMatcher getCredentialsMatcher() {
-              return new JWTCredentialsMatcher();
-            }
-          });
+          new HibernateShiroWebModule(GuiceContextListener.this.ctx));
 
     }
     return injector;
@@ -184,31 +191,37 @@ public class GuiceContextListener extends GuiceServletContextListener {
   }
 
   private PerThreadAction getThreadLocalClearer(final ThreadLocal<EntityManager> threadLocal) {
-    return t -> {
-      try {
-        Field threadLocals = Thread.class.getDeclaredField("threadLocals");
-        threadLocals.setAccessible(true);
-        Object o = threadLocals.get(t);
-        if (o != null) {
-          Method remove = o.getClass().getDeclaredMethod("remove", ThreadLocal.class);
-          remove.setAccessible(true);
-          remove.invoke(o, threadLocal);
+    return new PerThreadAction() {
+      @Override
+      public void doToThread(Thread t) {
+        try {
+          Field threadLocals = Thread.class.getDeclaredField("threadLocals");
+          threadLocals.setAccessible(true);
+          Object o = threadLocals.get(t);
+          if (o != null) {
+            Method remove = o.getClass().getDeclaredMethod("remove", ThreadLocal.class);
+            remove.setAccessible(true);
+            remove.invoke(o, threadLocal);
+          }
+        } catch (NoSuchFieldException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
+          // we are un-deploying anyway so not much point in doing anything other than complaining.
+          e.printStackTrace();
         }
-      } catch (NoSuchFieldException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
-        // we are un-deploying anyway so not much point in doing anything other than complaining.
-        e.printStackTrace();
       }
     };
   }
 
   private PerThreadAction getGuiceThreadCleanup() {
-    return t -> {
-      String name = t.getName();
-      log.trace("inspecting {}", name);
-      if (name.matches("com\\.google\\.inject\\.internal\\.util\\.\\$Finalizer.*")) {
-        log.info("Stopping thread:{}", t);
-        //noinspection deprecation
-        t.stop(); // don't care we're shutting down.
+    return new PerThreadAction() {
+      @Override
+      public void doToThread(Thread t) {
+        String name = t.getName();
+        log.trace("inspecting {}", name);
+        if (name.matches("com\\.google\\.inject\\.internal\\.util\\.\\$Finalizer.*")) {
+          log.info("Stopping thread:{}", t);
+          //noinspection deprecation
+          t.stop(); // don't care we're shutting down.
+        }
       }
     };
   }

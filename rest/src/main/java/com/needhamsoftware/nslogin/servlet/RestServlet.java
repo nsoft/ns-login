@@ -2,7 +2,9 @@ package com.needhamsoftware.nslogin.servlet;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.needhamsoftware.nslogin.AuthzException;
 import com.needhamsoftware.nslogin.FieldUtil;
+import com.needhamsoftware.nslogin.model.ActionInvocation;
 import com.needhamsoftware.nslogin.model.Persisted;
 import com.needhamsoftware.nslogin.model.RestFilterEnable;
 import com.needhamsoftware.nslogin.model.Validatable;
@@ -10,7 +12,6 @@ import com.needhamsoftware.nslogin.service.Filter;
 import com.needhamsoftware.nslogin.service.ObjectService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.shiro.authz.UnauthorizedException;
 import org.hibernate.exception.ConstraintViolationException;
 
 import javax.inject.Inject;
@@ -39,8 +40,6 @@ public class RestServlet extends javax.servlet.http.HttpServlet {
   private ObjectService objectService;
   @Inject
   private ObjectMapper mapper;
-  @Inject
-  private ServletUtils servlet;
 
   private FieldUtil util = new FieldUtil();
 
@@ -77,6 +76,7 @@ public class RestServlet extends javax.servlet.http.HttpServlet {
         if (Messages.DO.errorCount() != 0) {
           handleError(resp, 400);
         } else {
+          invokeActions(req,resp,p);
           Persisted updated = objectService.update(p);
           success(resp, null);
         }
@@ -87,6 +87,10 @@ public class RestServlet extends javax.servlet.http.HttpServlet {
       } catch (OptimisticLockException e) {
         Messages.DO.sendErrorMessage("Someone (or something) has made a conflicting change while you were working. Please refresh the page to load the new edits and retry your submission.");
         handleError(resp, 400);
+      } catch (AuthzException e) {
+        log.debug(e);
+        Messages.DO.sendErrorMessage("Insufficient Access Rights");
+        handleError(resp, 403);
       } catch (Exception e) {
         Messages.DO.sendErrorMessage("Internal Error:" + e.getMessage());
         log.error("Unexpected Exception!", e);
@@ -102,7 +106,7 @@ public class RestServlet extends javax.servlet.http.HttpServlet {
   }
 
   private void handleError(HttpServletResponse resp, int code) throws IOException {
-    servlet.handleError(resp, code, mapper);
+    ServletUtils.handleError(resp, code, mapper);
   }
 
   @Override
@@ -148,6 +152,7 @@ public class RestServlet extends javax.servlet.http.HttpServlet {
         if (ref.getId() != null) {
           @SuppressWarnings("unchecked")
           Persisted obj = objectService.get(ref.getType(), ref.getId());
+          invokeActions(req,resp,obj);
           success(resp, 1L, obj);
         } else {
           String startParam = req.getParameter("start");
@@ -173,7 +178,8 @@ public class RestServlet extends javax.servlet.http.HttpServlet {
       Messages.DO.exception(nfe, log);
       handleError(resp, 400);
       log.debug("NFE:",nfe);
-    } catch(SecurityException | UnauthorizedException e) {
+    } catch(SecurityException | AuthzException e) {
+      log.debug(e);
       Messages.DO.sendErrorMessage("Insufficient Access Rights");
       handleError(resp, 403);
     } catch (Exception e) {
@@ -246,6 +252,7 @@ public class RestServlet extends javax.servlet.http.HttpServlet {
         if (Messages.DO.errorCount() != 0) {
           handleError(resp, 400);
         } else {
+          invokeActions(req,resp,p);
           objectService.insert(p);
           success(resp, null);
         }
@@ -260,9 +267,13 @@ public class RestServlet extends javax.servlet.http.HttpServlet {
         // one time hack, if we get more of these invest in a generic solution.
         Throwable cause = e.getCause().getCause();
         if (cause instanceof ConstraintViolationException) {
-            Messages.DO.sendErrorMessage(ref.getType().getSimpleName() + " exists");
+          Messages.DO.sendErrorMessage(ref.getType().getSimpleName() + " exists");
         }
         handleError(resp, 409);
+      } catch (AuthzException e) {
+        log.debug(e);
+        Messages.DO.sendErrorMessage("Insufficient Access Rights");
+        handleError(resp, 403);
       } catch (Exception e) {
         e.printStackTrace();
         Messages.DO.exception(e, log);
@@ -271,7 +282,6 @@ public class RestServlet extends javax.servlet.http.HttpServlet {
     }
 
   }
-
 
   private void success(HttpServletResponse resp, Long numFound, Object... objs) throws IOException {
     resp.setContentType("application/json");
@@ -291,5 +301,25 @@ public class RestServlet extends javax.servlet.http.HttpServlet {
   @Override
   protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
     super.doDelete(req, resp);
+  }
+
+  private void invokeActions(HttpServletRequest req, HttpServletResponse resp, Persisted p) throws IOException {
+    @SuppressWarnings("unchecked")
+    List<ActionInvocation> invocations = (List<ActionInvocation>) req.getAttribute("NS_ACTION");
+    for (ActionInvocation invocation : invocations) {
+      if (invocation != null) {
+        invocation.getObjectsActedUpon().add(p);
+        try {
+          invocation.prePersist();
+        } catch (ValidationException e) {
+          if (Messages.DO.errorCount() == 0) {
+            Messages.DO.sendErrorMessage(e.getMessage());
+          }
+        }
+        if (Messages.DO.errorCount() > 0) {
+          handleError(resp, 400);
+        }
+      }
+    }
   }
 }

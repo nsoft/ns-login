@@ -18,6 +18,7 @@ package com.needhamsoftware.nslogin.servlet;
 
 import com.needhamsoftware.nslogin.model.AccountRequest;
 import com.needhamsoftware.nslogin.model.AppUser;
+import com.needhamsoftware.nslogin.model.Permission;
 import org.mindrot.jbcrypt.BCrypt;
 
 import javax.persistence.*;
@@ -29,6 +30,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -80,6 +82,13 @@ public class UserConfirmedServlet extends HttpServlet implements LoginConstants 
           tx.begin();
           AppUser newUser = new AppUser(request);
           em.persist(newUser);
+          Permission selfControl = new Permission();
+          selfControl.setType("AppUser");
+          selfControl.setAction("*");
+          selfControl.setObjId(String.valueOf(newUser.getId()));
+          em.persist(selfControl);
+          newUser.setIntrinsicPermissions(new ArrayList<>());
+          newUser.getIntrinsicPermissions().add(selfControl);
           tx.commit();
           resp.sendRedirect("/login/");
         } else {

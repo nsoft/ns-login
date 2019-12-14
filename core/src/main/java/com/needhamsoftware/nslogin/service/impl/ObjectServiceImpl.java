@@ -19,18 +19,17 @@ package com.needhamsoftware.nslogin.service.impl;
 import com.copyright.easiertest.AnnotatedElementAction;
 import com.copyright.easiertest.AnnotationUtil;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.needhamsoftware.nslogin.AuthzException;
 import com.needhamsoftware.nslogin.FieldUtil;
 import com.needhamsoftware.nslogin.PasswordStandards;
 import com.needhamsoftware.nslogin.model.*;
 import com.needhamsoftware.nslogin.service.Filter;
 import com.needhamsoftware.nslogin.service.ObjectService;
+import com.needhamsoftware.nslogin.service.PermissionService;
 import com.needhamsoftware.nslogin.servlet.ObjectPropertyFilter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.shiro.SecurityUtils;
-import org.apache.shiro.authz.permission.WildcardPermission;
-import org.apache.shiro.subject.PrincipalCollection;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -46,6 +45,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Singleton
 public class ObjectServiceImpl implements ObjectService {
@@ -58,8 +58,14 @@ public class ObjectServiceImpl implements ObjectService {
   @Inject
   private Provider<EntityManager> entityManagerProvider;
 
+  @Inject
+  private PermissionService permissionService;
+
   @Override
-  public void loadSystemUser() {
+  public void initSystem() {
+    // this is for testing, a proper system should replace this with a
+    // db script managed with something like liqubase.
+
     EntityManager entityManager = entityManagerProvider.get();
 
     String qlString = "from AppUser where id=:id";
@@ -88,24 +94,26 @@ public class ObjectServiceImpl implements ObjectService {
       SYSTEM_USER = entityManager.merge(SYSTEM_USER);
       security = entityManager.merge(security);
       SYSTEM_USER.setSecurityInfo(security);
-      Permission allPowers = new Permission();
-      allPowers.setAction("*");
-      allPowers.setField("*");
-      allPowers.setObjId("*");
-      allPowers.setType("*");
+      Permission allPowers = permAllPowers();
       allPowers = entityManager.merge(allPowers);
-      Role superRole = new Role();
-      superRole.setKey("super_user");
-      superRole.setName("Full Control Super User");
-      superRole.setMembers(new ArrayList<>());
-      superRole.getMembers().add(SYSTEM_USER);
-      superRole.setGrants(new ArrayList<>());
-      superRole.getGrants().add(allPowers);
-      superRole = entityManager.merge(superRole);
+      Role superRole = roleSuperUser(entityManager, SYSTEM_USER, allPowers);
+
       entityManager.persist(allPowers);
       entityManager.persist(superRole);
       entityManager.persist(security);
       entityManager.persist(SYSTEM_USER);
+
+      // actions
+
+      Permission readThings = permReadThings();
+      Permission readUsers = permReadUsers();
+      Permission updateThings = permUpdateThings();
+      Permission updateUsers = permUpdateUsers();
+      Permission createThings = permCreateThings();
+
+      roleAdmin(entityManager, List.of(readThings, readUsers, createThings, updateThings, updateUsers));
+      roleThingReader(entityManager, List.of(readThings));
+
       try {
         tx.commit();
       } catch (RollbackException ex) {
@@ -115,6 +123,86 @@ public class ObjectServiceImpl implements ObjectService {
       }
       entityManager.close();
     }
+  }
+
+  private Role roleSuperUser(EntityManager entityManager, AppUser SYSTEM_USER, Permission allPowers) {
+    Role role = new Role();
+    role.setKey("super_user");
+    role.setName("Full Control Super User");
+    role.setMembers(new ArrayList<>());
+    role.getMembers().add(SYSTEM_USER);
+    role.setGrants(new ArrayList<>());
+    role.getGrants().add(allPowers);
+    role = entityManager.merge(role);
+    return role;
+  }
+
+  private void roleThingReader(EntityManager entityManager, List<Permission> powers) {
+    Role role = new Role();
+    role.setKey("read_thing");
+    role.setName("Reader of Things");
+    role.setMembers(new ArrayList<>());
+    role.setGrants(new ArrayList<>());
+    for (Permission power : powers) {
+      role.getGrants().add(power);
+    }
+    entityManager.merge(role);
+  }
+
+  private void roleAdmin(EntityManager entityManager, List<Permission> powers) {
+    Role role = new Role();
+    role.setKey("admin");
+    role.setName("Administrator");
+    role.setMembers(new ArrayList<>());
+    role.setGrants(new ArrayList<>());
+    for (Permission power : powers) {
+      role.getGrants().add(power);
+    }
+    entityManager.merge(role);
+  }
+
+  private Permission permAllPowers() {
+    Permission allPowers = new Permission();
+    allPowers.setAction("*");
+    allPowers.setField("*");
+    allPowers.setObjId("*");
+    allPowers.setType("*");
+    return allPowers;
+  }
+
+  private Permission permReadThings() {
+    Permission allPowers = new Permission();
+    allPowers.setAction("read");
+    allPowers.setType("TestThing");
+    return allPowers;
+  }
+
+  private Permission permUpdateThings() {
+    Permission allPowers = new Permission();
+    allPowers.setAction("update");
+    allPowers.setType("TestThing");
+    return allPowers;
+  }
+
+  private Permission permCreateThings() {
+    Permission allPowers = new Permission();
+    allPowers.setAction("create");
+    allPowers.setType("TestThing");
+    return allPowers;
+  }
+
+  private Permission permReadUsers() {
+    Permission allPowers = new Permission();
+    allPowers.setAction("read");
+    allPowers.setType("AppUser");
+    return allPowers;
+  }
+
+  private Permission permUpdateUsers() {
+    Permission allPowers = new Permission();
+    allPowers.setAction("update");
+    allPowers.setType("AppUser");
+    return allPowers;
   }
 
   @Override
@@ -132,7 +220,7 @@ public class ObjectServiceImpl implements ObjectService {
         .createQuery(qlString, clazz)
         .setParameter("ids", identifiers);
 
-    return  q.getResultList();
+    return q.getResultList();
   }
 
   @Override
@@ -162,22 +250,22 @@ public class ObjectServiceImpl implements ObjectService {
   }
 
   @Override
-  public <T extends Persisted> List<T> list(Class<T> clazz, int start, int rows) {
+  public <T extends Persisted> List<T> list(Class<T> clazz, int start, int rows) throws AuthzException {
     return list(clazz, start, rows, new ArrayList<>(), null);
   }
 
   @Override
-  public <T extends Persisted> List<T> list(Class<T> clazz, int start, int rows, boolean privileged) {
+  public <T extends Persisted> List<T> list(Class<T> clazz, int start, int rows, boolean privileged) throws AuthzException {
     return list(clazz, start, rows, new ArrayList<>(), null, privileged);
   }
 
   @Override
-  public <T extends Persisted> List<T> list(Class<T> clazz, int start, int rows, List<Filter> filters, List<String> sorts) {
+  public <T extends Persisted> List<T> list(Class<T> clazz, int start, int rows, List<Filter> filters, List<String> sorts) throws AuthzException {
     return list(clazz, start, rows, filters, sorts, false);
   }
 
   @Override
-  public <T extends Persisted> List<T> list(Class<T> clazz, int start, int rows, List<Filter> filters, List<String> sorts, boolean privileged) {
+  public <T extends Persisted> List<T> list(Class<T> clazz, int start, int rows, List<Filter> filters, List<String> sorts, boolean privileged) throws AuthzException {
     return list(clazz, start, rows, filters, sorts, privileged, false);
   }
 
@@ -188,7 +276,7 @@ public class ObjectServiceImpl implements ObjectService {
       List<Filter> filters,
       List<String> sorts,
       boolean privileged,
-      boolean fresh) {
+      boolean fresh) throws AuthzException {
     EntityManager entityManager = entityManagerProvider.get();
     TypedQuery<T> q;
     if (privileged) {
@@ -206,18 +294,18 @@ public class ObjectServiceImpl implements ObjectService {
       q.setHint("javax.persistence.cache.retrieveMode", CacheRetrieveMode.BYPASS);
     }
     @SuppressWarnings("UnnecessaryLocalVariable") // useful for debugging
-    List<T> resultList = q.getResultList();
+        List<T> resultList = q.getResultList();
     return resultList;
   }
 
 
   @Override
-  public Long count(Class<? extends Persisted> clazz, List<Filter> filters) {
+  public Long count(Class<? extends Persisted> clazz, List<Filter> filters) throws AuthzException {
     return count(clazz, filters, false);
   }
 
   @Override
-  public Long count(Class<? extends Persisted> clazz, List<Filter> filters, boolean privileged) {
+  public Long count(Class<? extends Persisted> clazz, List<Filter> filters, boolean privileged) throws AuthzException {
     EntityManager entityManager = entityManagerProvider.get();
     TypedQuery<Long> q;
     if (privileged) {
@@ -231,18 +319,20 @@ public class ObjectServiceImpl implements ObjectService {
 
   @Override
   @Transactional
-  public Persisted insert(Persisted persisted) throws ObjectAlreadyHasIdException {
-    SecurityUtils.getSubject().checkPermission(persisted.getClass().getSimpleName() + ":create");
+  public Persisted insert(Persisted persisted) throws ObjectAlreadyHasIdException, AuthzException {
+    permissionService.checkPermsAndFilter(persisted.getClass(), "create");
     if (persisted.getId() != null) {
       throw new ObjectAlreadyHasIdException("It is not permitted to specify the ID of a new object. Use update() for existing objects");
     }
     EntityManager entityManager = entityManagerProvider.get();
     AppUser actor;
-    actor = getTopPrincipal();
+    actor = permissionService.getTopPrincipal();
     log.debug("{} created by {}", persisted.getClass().getName(), actor);
     Instant now = Instant.now();
     persisted.setCreated(now);
     persisted.setModified(now);
+    persisted.setModifiedBy(actor);
+    persisted.setOwner(actor);
     entityManager.persist(persisted);
     return persisted;
   }
@@ -250,8 +340,13 @@ public class ObjectServiceImpl implements ObjectService {
 
   @Override
   @Transactional
-  public Persisted update(Persisted persistMe) {
-    SecurityUtils.getSubject().checkPermission(persistMe.getClass().getSimpleName() + ":update");
+  public Persisted update(Persisted persistMe) throws AuthzException {
+    String onlyUpdate = permissionService.checkPermsAndFilter(persistMe.getClass(), "update");
+    if (!StringUtils.isBlank(onlyUpdate)) {
+      if (Stream.of(onlyUpdate.split(",")).noneMatch(persistMe.getId().toString()::equals)) {
+        throw new AuthzException();
+      }
+    }
 
     log.debug("updating {}", persistMe);
     EntityManager entityManager = entityManagerProvider.get();
@@ -291,7 +386,7 @@ public class ObjectServiceImpl implements ObjectService {
 
     Instant now = Instant.now();
     persistMe.setModified(now);
-    persistMe.setModifiedBy(getTopPrincipal());
+    persistMe.setModifiedBy(permissionService.getTopPrincipal());
 
     // new state introduced to the session here, hibernate will update DB if required
     return entityManager.merge(persistMe);
@@ -330,19 +425,19 @@ public class ObjectServiceImpl implements ObjectService {
       List<String> sorts,
       boolean count,
       Class<R> retClazz,
-      String action) {
+      String action) throws AuthzException {
 
-    SecurityUtils.getSubject().checkPermission(new WildcardPermission(clazz.getSimpleName() + ":" + action));
+    String specificPermittedIds = permissionService.checkPermsAndFilter(clazz, action);
 
     StringBuilder qlString = new StringBuilder((count ? "select count(*) " : "") + "from " + clazz.getName());
 
-    universalWhere(clazz, qlString);
+    universalWhere(clazz, qlString, specificPermittedIds);
     addFilters(filters, qlString, clazz);
     addSorts(sorts, qlString, clazz);
     TypedQuery<R> q = entityManager.createQuery(qlString.toString(), retClazz);
     applyParameterValues(filters, q);
     long id = -1;
-    AppUser principal1 = getTopPrincipal();
+    AppUser principal1 = permissionService.getTopPrincipal();
     if (principal1 != null) {
       id = principal1.getId();
     }
@@ -350,49 +445,26 @@ public class ObjectServiceImpl implements ObjectService {
     return q;
   }
 
-  // shiro can track multiple principals for features such as impersonation.
-  // assume that the top one is the correct user for now since we're not doing
-  // anything nearly that fancy...
-  private AppUser getTopPrincipal() {
-    PrincipalCollection principals = SecurityUtils.getSubject().getPrincipals();
-    if (principals != null) {
-      for (Object principal : principals) {
-        if (principal instanceof AppUser) {
-          return (AppUser) principal;
-        }
-      }
-    }
-    return null;
-  }
-
-  private <T extends Persisted> void universalWhere(Class<T> clazz, StringBuilder qlString) {
-    AppUser u = getTopPrincipal();
+  private <T extends Persisted> void universalWhere(Class<T> clazz, StringBuilder qlString, String specificPermittedIds) {
 
     List<Long> allowedIds = new ArrayList<>();
-    if (u != null) {
-      //noinspection Convert2streamapi
-      List<Permission> intrinsicPermissions = u.getIntrinsicPermissions();
-      if (intrinsicPermissions != null) {
-        for (Permission permission : intrinsicPermissions) {
-          if (permission.getType() != null && permission.getType().equals(clazz.getName())
-              && POS_INTEGER.matcher(permission.getObjId()).matches()) {
-            allowedIds.add(Long.valueOf(permission.getObjId()));
-          }
-        }
-      }
+
+    String[] idStrs = specificPermittedIds.split(",");
+
+    for (String id : idStrs) {
+      allowedIds.add(Long.parseLong(id)); // parse them to ensure we can't be injected even if someone fools us!
     }
 
-    String specificPermittedIds = "";
+    String idInClause = "";
     if (allowedIds.size() > 0) {
-      String inWrapper = "id in (%s)";
       // injection safe... came from our DB permissions and checked to be numeric above (just in case REST got fooled)
-      specificPermittedIds += " OR ( " + String.format(inWrapper, String.join(",", specificPermittedIds)) + " )";
+      idInClause = " OR ( id in (" + String.join(",", idStrs) + " ) )";
     }
 
     qlString
         .append(" where (")
-        .append(" owner is null OR owner.id = :" + OWNER_ID_PARAM)
-        .append(specificPermittedIds) // e.g. " OR (id in (1,2,3)"
+        .append(" owner is null OR owner.id = :" + OWNER_ID_PARAM + " ")
+        .append(idInClause) // e.g. " OR (id in (1,2,3)"
         .append(" )");
   }
 
@@ -402,8 +474,13 @@ public class ObjectServiceImpl implements ObjectService {
     Set<Parameter<?>> parameters = q.getParameters();
     for (Filter filter : filters) {
       Object value = filter.getValue(this);
+      String operator = filter.getOperator();
       int tmp = count;
       if (value != null && parameters.stream().anyMatch((parameter) -> ("f" + tmp).equals(parameter.getName()))) {
+        if (operator.contains("in")) { // onl supports ids
+          value = Stream.of(((String) value).split(",")).map(Long::parseLong).collect(Collectors.toList());
+        }
+
         q.setParameter("f" + count, value);
         count++;
       }
@@ -467,6 +544,9 @@ public class ObjectServiceImpl implements ObjectService {
         }
         throw new PersistenceException("Tried to filter " + f.getField() + f.getOperator() + "null which makes no sense!");
       } else {
+        if (f.getOperator().contains("in")) {
+          return f.getField() + " " + f.getOperator() + "( :f" + count[0]++ + " )";
+        }
         return f.getField() + " " + f.getOperator() + " :f" + count[0]++;
       }
     }).collect(Collectors.toList());

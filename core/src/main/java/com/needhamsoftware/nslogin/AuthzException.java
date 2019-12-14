@@ -14,36 +14,13 @@
  *    limitations under the License.
  */
 
-package com.needhamsoftware.nslogin.model;
+package com.needhamsoftware.nslogin;
 
-import java.util.ArrayList;
-import java.util.List;
-
-public class ActionInvocation implements RequiresPermissions {
-  public ActionInvocation(Action action) {
-    this.action = action;
+public class AuthzException extends Exception {
+  public AuthzException() {
   }
 
-  private Action action;
-
-  private List<Object> objectsActedUpon = new ArrayList<>();
-
-
-
-  public void prePersist() {
-    action.prePersist(objectsActedUpon);
-  }
-
-  public void postPersist() {
-    action.postPersist(objectsActedUpon);
-  }
-
-  public List<Object> getObjectsActedUpon() {
-    return objectsActedUpon;
-  }
-
-  @Override
-  public List<Permission> requiredPerms() {
-    return action.getRequires();
+  public AuthzException(Exception e) {
+    super(e);
   }
 }

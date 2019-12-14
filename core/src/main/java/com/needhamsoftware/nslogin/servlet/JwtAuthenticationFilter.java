@@ -19,6 +19,7 @@ package com.needhamsoftware.nslogin.servlet;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.needhamsoftware.nslogin.AuthzException;
 import io.jsonwebtoken.*;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.fluent.Content;
@@ -107,7 +108,7 @@ public class JwtAuthenticationFilter implements Filter, LoginConstants {
     String logout = req.getParameter("logout");
     boolean loggingOut = false;
     if (logout != null) {
-      req.getSession().invalidate();
+      logout(req);
       loggingOut = true;
     }
 
@@ -118,8 +119,13 @@ public class JwtAuthenticationFilter implements Filter, LoginConstants {
     // note the token check is to avoid polluting the URL with the JWT token.
     // if we see the token process it and redirect to get rid of it.
     HttpSession session = req.getSession();
-    if (session.getAttribute(PRINCIPAL) != null && token == null) {
-      proceed(request, response, chain, session.getAttribute(CLAIMS));
+    Object email = session.getAttribute(PRINCIPAL);
+    if (email != null && token == null) {
+      try {
+        proceed(request, response, chain, session.getAttribute(CLAIMS));
+      } catch (AuthzException e) {
+        log.fatal("User {} is authenticating successfully but un authorized to load themselves from the database",email );
+      }
       return;
     }
 
@@ -204,9 +210,12 @@ public class JwtAuthenticationFilter implements Filter, LoginConstants {
         originalDestination = req.getRequestURI();
       }
       Cookie uid = new Cookie("nslogin-uid", claimsJws.getBody().getSubject());
+      uid.setPath("/");
+      uid.setMaxAge(session.getMaxInactiveInterval() - 5); // cookie to expire before session
       resp.addCookie(uid);
       Cookie jwt = new Cookie(X_JWT_TOKEN, token);
       jwt.setMaxAge(session.getMaxInactiveInterval() - 5); // cookie to expire before session
+      jwt.setPath("/");
       resp.addCookie(jwt);
       resp.sendRedirect(originalDestination); // finally go to the original url with query params restored
       return;
@@ -218,11 +227,15 @@ public class JwtAuthenticationFilter implements Filter, LoginConstants {
     }
   }
 
+  protected void logout(HttpServletRequest req) {
+    req.getSession().invalidate();
+  }
+
   /**
    * Override this in sub classes that need to do additional configuration of Authorization infrastructure.
    * One example might involve setting the subject for shiro...
    */
-  protected void proceed(ServletRequest request, ServletResponse response, FilterChain chain, Object principal) throws IOException, ServletException {
+  protected void proceed(ServletRequest request, ServletResponse response, FilterChain chain, Object principal) throws IOException, ServletException, AuthzException {
     chain.doFilter(request, response);
   }
 

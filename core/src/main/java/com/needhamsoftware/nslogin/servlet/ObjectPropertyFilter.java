@@ -30,7 +30,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class ObjectPropertyFilter implements Filter {
-  public static final Pattern FILTER_OPER_PATTERN = Pattern.compile("(=|>=|!=|<=|>|<)\\s*(.*)");
+  public static final Pattern FILTER_OPER_PATTERN = Pattern.compile("(=|>=|!=|<=|>|<|\\sin\\s)\\s*(.*)");
   private String field;
   private String operator;
   private Object value;
@@ -44,7 +44,11 @@ public class ObjectPropertyFilter implements Filter {
       throw new IllegalArgumentException("Could not parse filter pattern:" + filterStr);
     }
     this.operator = m.group(1);
-    this.value = parseToFieldType(m.group(2),objField);
+    if (this.operator.contains("in")) {
+      this.value = m.group(2);
+    } else {
+      this.value = parseToFieldType(m.group(2),objField);
+    }
     this.objField = objField;
   }
 

@@ -51,13 +51,13 @@ public class Permission extends Persisted {
   // override for more compelx permissions
   @SuppressWarnings("WeakerAccess")
   protected String applyQualifier() {
-    return objId == null ? "" : ":" + objId;
+    return objId == null ? ":*" : ":" + objId;
   }
 
   // override for more compelx permissions
   @SuppressWarnings("WeakerAccess")
   protected String applyField() {
-    return field == null ? "" : ":" + field;
+    return field == null ? ":*" : ":" + field;
   }
 
   public String getType() {

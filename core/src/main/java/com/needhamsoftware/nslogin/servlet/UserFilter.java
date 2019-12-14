@@ -16,8 +16,12 @@
 
 package com.needhamsoftware.nslogin.servlet;
 
+import com.needhamsoftware.nslogin.AuthzException;
 import com.needhamsoftware.nslogin.model.AppUser;
 import com.needhamsoftware.nslogin.service.ObjectService;
+import com.needhamsoftware.nslogin.service.PermissionService;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -27,9 +31,13 @@ import java.io.IOException;
 
 @Singleton
 public class UserFilter implements Filter {
+  private static Logger log = LogManager.getLogger();
 
   @Inject
   private ObjectService objectService;
+
+  @Inject
+  private PermissionService permissionService;
 
   @Override
   public void init(FilterConfig filterConfig) {
@@ -39,7 +47,13 @@ public class UserFilter implements Filter {
   @Override
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
     HttpServletRequest req = (HttpServletRequest) request;
-    AppUser siteUser = ServletUtils.lookUpPrincipal(req, objectService);
+    AppUser siteUser = null;
+    try {
+      siteUser = permissionService.lookUpPrincipal(req, objectService);
+    } catch (AuthzException e) {
+      log.debug(e);
+      Messages.DO.sendErrorMessage("Insufficient Access Rights");
+    }
 
     req.getSession().setAttribute("com.needhamsoftware.nslogin.SITE_USER",siteUser);
     chain.doFilter(request,response);

@@ -50,6 +50,7 @@ public class Notification extends Persisted {
   private Instant acknowledged; // date dismissed or clicked on.
   @ManyToOne
   @JsonIgnore
+  @RestFilterEnable
   private AppUser recipient;
 
   public Notification(String message, NotificationType notificationType) {

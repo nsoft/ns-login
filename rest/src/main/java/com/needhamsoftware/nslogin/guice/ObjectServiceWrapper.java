@@ -17,6 +17,7 @@
 package com.needhamsoftware.nslogin.guice;
 
 import com.google.inject.persist.Transactional;
+import com.needhamsoftware.nslogin.AuthzException;
 import com.needhamsoftware.nslogin.model.Persisted;
 import com.needhamsoftware.nslogin.service.Filter;
 import com.needhamsoftware.nslogin.service.impl.ObjectAlreadyHasIdException;
@@ -34,8 +35,8 @@ public class ObjectServiceWrapper implements GuiceObjectService {
   private ObjectServiceImpl service;
 
   @Override
-  public void loadSystemUser() {
-    service.loadSystemUser();
+  public void initSystem() {
+    service.initSystem();
   }
 
   @Override
@@ -54,51 +55,51 @@ public class ObjectServiceWrapper implements GuiceObjectService {
   }
 
   @Override
-  public <T extends Persisted> List<T> list(Class<T> clazz, int start, int rows) {
+  public <T extends Persisted> List<T> list(Class<T> clazz, int start, int rows) throws AuthzException {
     return service.list(clazz, start, rows);
   }
 
   @Override
-  public <T extends Persisted> List<T> list(Class<T> clazz, int start, int rows, boolean privileged) {
+  public <T extends Persisted> List<T> list(Class<T> clazz, int start, int rows, boolean privileged) throws AuthzException {
     return service.list(clazz, start, rows, privileged);
   }
 
   @Override
-  public <T extends Persisted> List<T> list(Class<T> clazz, int start, int rows, List<Filter> filters, List<String> sorts) {
+  public <T extends Persisted> List<T> list(Class<T> clazz, int start, int rows, List<Filter> filters, List<String> sorts) throws AuthzException {
     return service.list(clazz, start, rows, filters, sorts);
   }
 
   @Override
-  public <T extends Persisted> List<T> list(Class<T> clazz, int start, int rows, List<Filter> filters, List<String> sorts, boolean privileged) {
+  public <T extends Persisted> List<T> list(Class<T> clazz, int start, int rows, List<Filter> filters, List<String> sorts, boolean privileged) throws AuthzException {
     return service.list(clazz, start, rows, filters, sorts, privileged);
   }
 
   @Override
-  public Long count(Class<? extends Persisted> clazz, List<Filter> filters) {
+  public Long count(Class<? extends Persisted> clazz, List<Filter> filters) throws AuthzException {
     return service.count(clazz, filters);
   }
 
   @Override
-  public Long count(Class<? extends Persisted> clazz, List<Filter> filters, boolean privileged) {
+  public Long count(Class<? extends Persisted> clazz, List<Filter> filters, boolean privileged) throws AuthzException {
     return service.count(clazz, filters, privileged);
   }
 
   @Override
   @Transactional
-  public Persisted insert(Persisted persisted) throws ObjectAlreadyHasIdException {
+  public Persisted insert(Persisted persisted) throws ObjectAlreadyHasIdException, AuthzException {
     return service.insert(persisted);
   }
 
   @Override
   @Transactional
-  public Persisted update(Persisted persisted) {
+  public Persisted update(Persisted persisted) throws AuthzException {
     return service.update(persisted);
   }
 
   @Override
   @Transactional
-  public void delete(Class clazz, Long identifer) {
-    service.delete(clazz, identifer);
+  public void delete(Class clazz, Long identifier) {
+    service.delete(clazz, identifier);
   }
 
 

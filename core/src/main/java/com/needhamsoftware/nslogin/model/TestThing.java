@@ -23,14 +23,13 @@ import com.needhamsoftware.nslogin.servlet.Messages;
 import com.voodoodyne.jackson.jsog.JSOGGenerator;
 
 import javax.persistence.Entity;
+import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
 import static com.needhamsoftware.nslogin.model.Validatable.*;
-import static com.needhamsoftware.nslogin.model.Validatable.checkInteger;
 
 /**
  * Class with properties of various types to validate our REST capabilities. Typically
@@ -51,7 +50,7 @@ public class TestThing extends Persisted implements Validatable{
   @ManyToOne
   private TestThing aThing;
 
-  @OneToMany
+  @ManyToMany
   private List<TestThing> someThings;
 
   public TestThing() {

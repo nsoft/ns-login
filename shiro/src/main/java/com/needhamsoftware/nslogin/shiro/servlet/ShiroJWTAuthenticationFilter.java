@@ -14,11 +14,15 @@
  *    limitations under the License.
  */
 
-package com.needhamsoftware.nslogin.servlet;
+package com.needhamsoftware.nslogin.shiro.servlet;
 
+import com.needhamsoftware.nslogin.AuthzException;
 import com.needhamsoftware.nslogin.model.AppUser;
 import com.needhamsoftware.nslogin.service.ObjectService;
+import com.needhamsoftware.nslogin.service.PermissionService;
+import com.needhamsoftware.nslogin.servlet.JwtAuthenticationFilter;
 import io.jsonwebtoken.Claims;
+import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.subject.ExecutionException;
 import org.apache.shiro.subject.PrincipalCollection;
 import org.apache.shiro.subject.SimplePrincipalCollection;
@@ -30,9 +34,11 @@ import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 
-import static com.needhamsoftware.nslogin.servlet.ServletUtils.*;
+import static com.needhamsoftware.nslogin.servlet.ServletUtils.NSLOGIN_ROLES;
+import static com.needhamsoftware.nslogin.servlet.ServletUtils.lookUpRolesByIdList;
 
 @SuppressWarnings("CdiInjectionPointsInspection")
 @Singleton
@@ -40,12 +46,15 @@ public class ShiroJWTAuthenticationFilter extends JwtAuthenticationFilter {
 
   @Inject
   private ObjectService objectService;
+  @Inject
+  private PermissionService permissionService;
+
 
   @Override
-  protected void proceed(ServletRequest request, ServletResponse response, FilterChain chain, Object principal) throws IOException, ServletException {
+  protected void proceed(ServletRequest request, ServletResponse response, FilterChain chain, Object principal) throws IOException, ServletException, AuthzException {
     // the subject in the JWT token is the email, we need need to look up the user by email.
     Claims claims = (Claims) principal;
-    AppUser user = lookUpUserByEmail(objectService,claims.getSubject());
+    AppUser user = permissionService.lookUpUserByEmail(objectService,claims.getSubject());
     user.setRoles(lookUpRolesByIdList(objectService, (String) claims.get(NSLOGIN_ROLES)));
     PrincipalCollection principals = new SimplePrincipalCollection(user, "rest");
     Subject subject = new Subject.Builder().principals(principals).buildSubject();
@@ -66,7 +75,13 @@ public class ShiroJWTAuthenticationFilter extends JwtAuthenticationFilter {
     }
   }
 
-  private void superProceed(ServletRequest request, ServletResponse response, FilterChain chain, Object principal) throws IOException, ServletException {
+  private void superProceed(ServletRequest request, ServletResponse response, FilterChain chain, Object principal) throws IOException, ServletException, AuthzException {
     super.proceed(request, response, chain, principal);
+  }
+
+  @Override
+  protected void logout(HttpServletRequest req) {
+    SecurityUtils.getSubject().logout();
+    super.logout(req);
   }
 }

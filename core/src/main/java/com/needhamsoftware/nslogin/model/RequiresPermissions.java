@@ -14,22 +14,10 @@
  *    limitations under the License.
  */
 
-package com.needhamsoftware.nslogin.servlet;
+package com.needhamsoftware.nslogin.model;
 
-import org.apache.shiro.web.filter.authc.FormAuthenticationFilter;
+import java.util.List;
 
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-
-/**
- *
- */
-public class FormAuthenticationFilterRest extends FormAuthenticationFilter {
-
-  @Override
-  protected void redirectToLogin(ServletRequest request, ServletResponse response) throws IOException {
-    ((HttpServletResponse)response).sendError(401);
-  }
+public interface RequiresPermissions {
+  List<Permission> requiredPerms();
 }

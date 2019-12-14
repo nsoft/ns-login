@@ -32,10 +32,10 @@ public class Role extends Persisted {
   @Column(name = "keyName")
   private String key;
 
-  @OneToMany(cascade = {CascadeType.MERGE}, fetch = FetchType.EAGER)
+  @ManyToMany(cascade = {CascadeType.MERGE}, fetch = FetchType.EAGER)
   private List<Permission> grants;
 
-  @OneToMany
+  @ManyToMany
   private List<AppUser> members;
 
   public List<AppUser> getMembers() {

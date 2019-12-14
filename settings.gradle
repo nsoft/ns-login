@@ -21,4 +21,5 @@ include 'app'
 include 'newuser'
 include 'reset'
 include 'rest'
+include 'shiro'
 

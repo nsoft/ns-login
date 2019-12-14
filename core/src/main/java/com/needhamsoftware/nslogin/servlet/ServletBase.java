@@ -16,8 +16,10 @@
 
 package com.needhamsoftware.nslogin.servlet;
 
+import com.needhamsoftware.nslogin.AuthzException;
 import com.needhamsoftware.nslogin.model.AppUser;
 import com.needhamsoftware.nslogin.service.ObjectService;
+import com.needhamsoftware.nslogin.service.PermissionService;
 
 import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
@@ -25,9 +27,11 @@ import javax.servlet.http.HttpServletRequest;
 public class ServletBase extends javax.servlet.http.HttpServlet {
   @Inject
   protected ObjectService objectService;
+  @Inject
+  private PermissionService permissionService;
 
-  AppUser getSiteUser(HttpServletRequest req) throws NumberFormatException {
-    AppUser siteUser = ServletUtils.lookUpPrincipal(req,objectService);
+  AppUser getSiteUser(HttpServletRequest req) throws AuthzException {
+    AppUser siteUser = permissionService.lookUpPrincipal(req,objectService);
     return objectService.get(AppUser.class, siteUser.getId());
   }
 }

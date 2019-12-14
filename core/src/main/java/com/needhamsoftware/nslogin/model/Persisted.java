@@ -36,6 +36,13 @@ public class Persisted {
   private Instant created;
   private Instant modified;
 
+  public AppUser getOwner() {
+    return owner;
+  }
+
+  public void setOwner(AppUser owner) {
+    this.owner = owner;
+  }
 
   public Long getId() {
     return id;
@@ -57,7 +64,7 @@ public class Persisted {
     return createdBy;
   }
 
-  public void setCreatedBy(AppUser createdBy) {
+  void setCreatedBy(AppUser createdBy) {
     this.createdBy = createdBy;
   }
 

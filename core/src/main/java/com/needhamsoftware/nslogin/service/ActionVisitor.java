@@ -18,7 +18,9 @@ package com.needhamsoftware.nslogin.service;
 
 import com.needhamsoftware.nslogin.model.Action;
 import com.needhamsoftware.nslogin.model.ActionInvocation;
+import com.needhamsoftware.nslogin.model.action.ReverseThings;
 
 public interface ActionVisitor {
   ActionInvocation visit(Action action);
+  ActionInvocation visit(ReverseThings action);
 }

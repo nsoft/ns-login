@@ -72,6 +72,9 @@ public class AppUser extends Persisted {
     securityInfo.setExpiration(null);
     securityInfo.setExpirationReason(null);
     securityInfo.setResetRequestedAt(null);
+    this.setOwner(this);
+    this.setCreatedBy(this);
+    this.setCreated(Instant.now());
   }
 
   public String getUsername() {

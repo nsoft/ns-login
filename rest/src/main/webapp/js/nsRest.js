@@ -31,13 +31,27 @@
 
   const MODELS = {};
   const INDEXES = {};
+  /**
+   * Pluggable rendering functions for activites prior to attaching the rendered components to the DOM.
+   * Can be specified via an attribute data-pre-render in the html (or added by JS). The value of said
+   * attribute will be used to look up a function in this map.
+   * @type {{default: default}}
+   */
   const PRE_RENDER = {
     'default': function (callback) {
       callback();
     }
   };
+  /**
+   * Pluggable rendering functions for activities that happen after the components have been attached to
+   * the DOM for the page. Can be specified via an attribute data-pre-render in the html (or added by JS).
+   * The value of said attribute will be used to look up a function in this map.
+   *
+   * @type {{default: default}}
+   */
   const POST_RENDER = {
-    'default': function () {
+    'default': function (callback) {
+      callback()
     }
   };
   const ENDPOINT = CONTEXT + "rest/api/";
@@ -244,6 +258,27 @@
     return false;
   }
 
+  function objectifyForm(form, original, preExec) {
+    let obj = original ? original : {};
+    let $form = $(form);
+    let pageName = $form.closest(".page").attr('id');
+    $form.find("input").each(function () {
+      let name = this.name;
+      if (name) { // ignore unnamed fields such as submit buttons
+        let fieldName = name.substr(pageName.length + 1);
+        if (this.type === 'checkbox') {
+          obj[fieldName] = $(this).is(":checked");
+        } else {
+          obj[fieldName] = $(this).val();
+        }
+      }
+    });
+    if (preExec) {
+      preExec(obj)
+    }
+    return obj;
+  }
+
   /**
    * Serializes a form into a JSOG encoded object. Supports checkboxes and any input
    * that has a useful value for .val(). Assumptions:
@@ -260,20 +295,7 @@
    * @returns {string} JSOG representation of the object corresponding to the field
    */
   function serializeForm(form, original, preExec) {
-    let obj = original ? original : {};
-    let $form = $(form);
-    let pageName = $form.closest(".page").attr('id');
-    $form.find("input").each(function () {
-      let fieldName = this.name.substr(pageName.length + 1);
-      if (this.type === 'checkbox') {
-        obj[fieldName] = $(this).is(":checked");
-      } else {
-        obj[fieldName] = $(this).val();
-      }
-    });
-    if (preExec) {
-      preExec(obj)
-    }
+    let obj = objectifyForm(form, original, preExec);
     return JSOG.stringify(obj);
   }
 
@@ -325,11 +347,14 @@
 
   // non-public method, caches a decoded object graph. Arrays ignored intentionally to avoid
   // using large amounts of memory for little gain.
-  function store(object) {
-    let type = MODELS[object.type];
+  function store(object, typeName) {
+    if (object.type) {
+      typeName = object.type;
+    }
+    let type = MODELS[typeName];
     if (!type) {
       //noinspection JSUnusedAssignment  // inspections bug? MODELS[object.type] could be undefined...
-      type = (MODELS[object.type] = {});
+      type = (MODELS[typeName] = {});
     }
     type[object.id] = object;  // and here the value would be used...??
   }
@@ -389,13 +414,16 @@
    * For strings, use REST.parse(string).
    *
    * @param data a javascript object, usually the result of $.get() or other ajax call.
+   * @param type the type to be used if the data doesn't have a .type attribute
    * @returns the decoded object graph with circular references restored.
    */
-  function decode(data) {
+  function decode(data, type) {
     let decoded = JSOG.decode(data);
     // decoded should always be a RestResponse object
     for (let i = 0; i < decoded.results.length; i++) {
-      store(decoded.results[i]);
+      if (decoded.results[i].type || type) {
+        store(decoded.results[i], type);
+      }
     }
     return decoded;
   }
@@ -404,10 +432,11 @@
    * Parses a json string and then decodes it using REST.decode(object)
    *
    * @param stringJson a json string that has not yet been converted to a javascript object.
+   * @param type the type to be used if the data doesn't have a .type attribute
    * @returns the parsed and decoded object graph.
    */
-  function parse(stringJson) {
-    return decode(JSON.parse(stringJson))
+  function parse(stringJson, type) {
+    return decode(JSON.parse(stringJson), type)
   }
 
   function parseFilters(filterList) {
@@ -415,7 +444,7 @@
     if (filterList) {
       let filters = filterList.split("|");
       for (let i = 0; i < filters.length; i++) {
-        let filterParser = /\s*(\w+)\s*(=|!=|>|<|>=|<=)\s*(?:(\w+)|'(.*)')/;
+        let filterParser = /\s*(\w+)\s*(=|!=|>|<|>=|<=|\sin\s)\s*(?:(\w+)|'(.*)')\s*$/;
         let match = filterParser.exec(filters[i]);
         if (match) {
           filtersSpec[match[1]] = encodeURIComponent(match[2]) + " " + (match[3] || match[4]);
@@ -489,7 +518,7 @@
       updateMessages(data);
       if (PRE_RENDER[preRender]) {
         PRE_RENDER[preRender](function () {
-          let parsed = decode(data).results;
+          let parsed = decode(data, type).results;
           $(select).empty();
           let groups = {};
           for (let i = 0; i < parsed.length; i++) {
@@ -527,6 +556,9 @@
     let type = this.getAttribute("data-type");
     let preRender = this.getAttribute("data-pre-render");
     preRender = (preRender) ? preRender : 'default';
+    let postRender = this.getAttribute("data-post-render");
+    postRender = (postRender) ? postRender : 'default';
+
     // TODO handle embedded pipes if we ever run into that
     let filterList = this.getAttribute("data-filters");
     let filtersSpec = parseFilters(filterList);
@@ -544,7 +576,7 @@
     }).done(function (data) {
       updateMessages(data);
       PRE_RENDER[preRender](function () {
-        let parsed = decode(data).results;
+        let parsed = decode(data, type).results;
         let $template = $(table).find(".rowTemplate");
         let $tbody = $(table).find("tbody");
         $tbody.empty();
@@ -584,6 +616,9 @@
           $tbody.append($row)
         }
       });
+      POST_RENDER[postRender](function () {
+
+      })
     }).fail(ajaxFail);
 
   }
@@ -765,10 +800,15 @@
   }
 
   function update(type, object, callback, action) {
+    mutate(type,object,callback,action,"POST")
+  }
+
+  function mutate(type, object, callback, action, method ) {
     //noinspection JSUnresolvedFunction
+    let url = ENDPOINT + type + "/" +  (object.id ? object.id : '');
     $.ajax({
-      url: ENDPOINT + type + "/" + object.id,
-      method: "POST",
+      url: url,
+      method: method,
       headers: {"X-Site-Action": action},
       data: JSOG.stringify(object),
       contentType: "application/json"
@@ -777,6 +817,10 @@
         callback();
       }
     }).fail(ajaxFail)
+  }
+
+  function create(type, object, callback, action) {
+    mutate(type,object,callback,action,"PUT")
   }
 
   jQuery(document).ready(function () {
@@ -804,6 +848,8 @@
     find:                 find,
     refresh:              refresh,
     submit:               submitForm,
+    serialize:            serializeForm,
+    objectify:            objectifyForm,
     refreshPage:          refreshDataOnPage,
     updateMessages:       updateMessages,
     ajaxFail:             ajaxFail,
@@ -814,6 +860,7 @@
     displayErrorMessage:  displayErrorMessage,
     displayMessage:       displayMessage,
     update:               update,
+    create:               create,
     prepareMessages:      prepareMessages
   };
 

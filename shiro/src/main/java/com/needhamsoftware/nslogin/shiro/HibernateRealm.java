@@ -29,7 +29,6 @@ import org.apache.shiro.authc.credential.CredentialsMatcher;
 import org.apache.shiro.authz.AuthorizationInfo;
 import org.apache.shiro.authz.Permission;
 import org.apache.shiro.authz.SimpleAuthorizationInfo;
-import org.apache.shiro.authz.permission.WildcardPermission;
 import org.apache.shiro.realm.AuthorizingRealm;
 import org.apache.shiro.subject.MutablePrincipalCollection;
 import org.apache.shiro.subject.PrincipalCollection;
@@ -48,8 +47,7 @@ import java.util.Map;
 @SuppressWarnings("CdiInjectionPointsInspection")
 public class HibernateRealm extends AuthorizingRealm {
 
-  @SuppressWarnings("JpaQlInspection")
-  private static final String FROM_USER_WHERE_EMAIL_PRINCIPAL = "from AppUser where email = :principal";
+  private static final String FROM_USER_WHERE_EMAIL_PRINCIPAL = "select a from AppUser a where a.userEmail = :principal";
   @SuppressWarnings("unused")
   private static final Logger log = LogManager.getLogger();
 
@@ -77,14 +75,14 @@ public class HibernateRealm extends AuthorizingRealm {
       for (Role role : u.getRoles()) {
         List<com.needhamsoftware.nslogin.model.Permission> grants = role.getGrants();
         for (com.needhamsoftware.nslogin.model.Permission grant : grants) {
-          perms.add(new WildcardPermission(grant.shiroString()));
+          perms.add(new DoubleWildcardPermission(grant.shiroString()));
         }
         roles.add(role.getKey());
       }
       authInfo.addRoles(roles);
       List<com.needhamsoftware.nslogin.model.Permission> intrinsicPermissions = u.getIntrinsicPermissions();
       for (com.needhamsoftware.nslogin.model.Permission ip : intrinsicPermissions) {
-        perms.add(new WildcardPermission(ip.shiroString()));
+        perms.add(new DoubleWildcardPermission(ip.shiroString()));
       }
       authInfo.addObjectPermissions(perms);
     }
@@ -121,7 +119,7 @@ public class HibernateRealm extends AuthorizingRealm {
 
   private AppUser loadUser(Long id) {
     EntityManager entityManager = entityManagerProvider.get();
-    return entityManager.createQuery("from AppUser where id=:id", AppUser.class)
+    return entityManager.createQuery("select a from AppUser a where a.id=:id", AppUser.class)
         .setParameter("id", id)
         .getSingleResult();
   }
