@@ -61,6 +61,7 @@ clean {
     include '*-es2015.js'
     include 'index.html'
   }
+  delete "$projectDir/dist"
 }
 
 build.dependsOn(ngCopy)
