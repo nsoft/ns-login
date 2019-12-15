@@ -15,7 +15,7 @@
  */
 
 // requires:
-//   jquery 2.0+
+//   jquery 2.0+x
 
 /**
  * This file contains relatively generic REST based actions. Generally these are not specific

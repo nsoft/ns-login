@@ -1,4 +1,4 @@
-/*
+/*!
  *    Copyright (c) 2019, Needham Software LLC
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,13 +14,19 @@
  *    limitations under the License.
  */
 
-rootProject.name = 'ns-login'
-include 'login'
-include 'core'
-include 'app'
-include 'newuser'
-include 'reset'
-include 'rest'
-include 'shiro'
-include 'admin'
+/*
+ *  Truly minimal CSS....
+ */
 
+.rowTemplate {
+  display: none;
+}
+
+.hidden-template {
+  display: none;
+}
+
+.messages {
+  width:600px;
+  border: solid black 2px;
+}
