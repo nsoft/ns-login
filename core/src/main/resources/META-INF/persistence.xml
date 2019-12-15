@@ -41,9 +41,6 @@
             <property name="hibernate.dbcp.testOnBorrow" value="true" />
             <property name="hibernate.dbcp.testOnReturn" value="true" />
             <property name="hibernate.dbcp.validationQuery" value="SELECT 1" />
-            <property name="hibernate.dbcp.ps.maxActive" value="8" />
-            <property name="hibernate.dbcp.ps.maxWait" value="8" />
-            <property name="hibernate.dbcp.ps.whenExhaustedAction" value="8" />
 
             <!-- Uncomment this next line to bootstrap a database auotmaticall -->
 <!--             <property name="hibernate.hbm2ddl.auto" value="update" />-->
