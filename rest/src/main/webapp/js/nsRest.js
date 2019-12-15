@@ -15,7 +15,9 @@
  */
 
 // requires:
-//   jquery 2.0+x
+//   jquery  3.4.1
+//   URI.js  1.19.2
+//   JSOG    1.0.7
 
 /**
  * This file contains relatively generic REST based actions. Generally these are not specific

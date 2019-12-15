@@ -1,0 +1,18 @@
+<mat-table class="lessons-table mat-elevation-z8" [dataSource]="dataSource">
+
+  <ng-container matColumnDef="id">
+    <div *matHeaderCellDef>Id</div>
+    <div *matCellDef="let user">{{user.id}}</div>
+  </ng-container>
+
+  <ng-container matColumnDef="name">
+    <div *matHeaderCellDef>Name</div>
+    <div *matCellDef="let user">{{user.username}}</div>
+  </ng-container>
+
+
+  <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
+
+  <mat-row *matRowDef="let row; columns: displayedColumns"></mat-row>
+
+</mat-table>
