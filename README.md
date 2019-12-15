@@ -17,7 +17,7 @@ on a J2EE servlet container.
   * Actions to specify complex server side operations beyond CRUD
   * _Optional_ javascript library for simplified interaction and caching
 * _Optional_ Authorization via Apache Shiro with database backed permissions
-* _Comming Soon: Optional web UI for simple user management_
+* _WIP: Optional web UI for simple user management_
 
 The basic login/logout features can be added to any existing application by adding a servlet 
 filter. Shiro Authorization presently requires a Guice environment. Any of the supplied
