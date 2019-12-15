@@ -55,8 +55,12 @@ task ngCopy(type: Copy, dependsOn: ngCopyIndex) {
 }
 
 clean {
-  delete 'src/main/webapp/index.html'
-  delete 'src/main/webapp/*-es5.js'
+  delete fileTree('src/main/webapp') {
+    include '*.js.map'
+    include '*-es5.js'
+    include '*-es2015.js'
+    include 'index.html'
+  }
 }
 
 build.dependsOn(ngCopy)
