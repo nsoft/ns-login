@@ -149,7 +149,7 @@ public class JwtAuthenticationFilter implements Filter, LoginConstants {
 
     HttpSession session = req.getSession();
 
-    if (token != null && !token.equals(session.getAttribute(TOKEN))) {
+    if (token == null || !token.equals(session.getAttribute(TOKEN))) {
       // User has logged out, new user logged in need a new session
       logout(req);
       session = req.getSession();
