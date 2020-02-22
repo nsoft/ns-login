@@ -44,11 +44,12 @@ public class ShiroPermissionServiceImpl implements PermissionService {
     String userEmail = (String) req.getSession().getAttribute(PRINCIPAL);
     return lookUpUserByEmail(objectService, userEmail);
   }
+
   /**
    * Check that the current user has permissions to execute this action
    *
-   * @throws NotPermittedException if the user doesn't have the appropriate permission(s)
    * @param permissions The permissions that the user is required to have
+   * @throws NotPermittedException if the user doesn't have the appropriate permission(s)
    */
   @Override
   public void checkPerms(List<Permission> permissions) throws NotPermittedException {
@@ -59,6 +60,7 @@ public class ShiroPermissionServiceImpl implements PermissionService {
       }
     }
   }
+
   @Override
   public AppUser lookUpUserByEmail(ObjectService objectService, String userEmail) throws AuthzException {
     AppUser siteUser;
@@ -86,7 +88,6 @@ public class ShiroPermissionServiceImpl implements PermissionService {
       } catch (UnauthorizedException e) {
         throw new AuthzException(e);
       }
-      String specificPermittedIds = "";
       AppUser topPrincipal = getTopPrincipal();
 
       List<Permission> allPerms = new ArrayList<>();
@@ -103,10 +104,7 @@ public class ShiroPermissionServiceImpl implements PermissionService {
                   p.getObjId() != null)
           .map(Permission::getObjId)
           .collect(Collectors.toList());
-      if (!objIds.contains("*")) {
-        specificPermittedIds = String.join(",", objIds);
-      }
-      return specificPermittedIds;
+      return String.join(",", objIds);
     }
   }
 

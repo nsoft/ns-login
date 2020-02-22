@@ -28,8 +28,8 @@ export class UserDataSourceService {
     this.loadingSubject.complete();
   }
 
-  loadLessons(courseId: number, filter = '',
-              sort = 'asc', start = 0, rows = 5) {
+  loadUsers(courseId: number, filter = '',
+            sort = 'asc', start = 0, rows = 5) {
 
     this.loadingSubject.next(true);
 

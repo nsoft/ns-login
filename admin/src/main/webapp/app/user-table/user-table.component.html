@@ -1,4 +1,4 @@
-<mat-table class="lessons-table mat-elevation-z8" [dataSource]="dataSource">
+<mat-table class="users-table mat-elevation-z8" [dataSource]="dataSource">
 
   <ng-container matColumnDef="id">
     <div *matHeaderCellDef>Id</div>
@@ -8,6 +8,11 @@
   <ng-container matColumnDef="name">
     <div *matHeaderCellDef>Name</div>
     <div *matCellDef="let user">{{user.username}}</div>
+  </ng-container>
+
+  <ng-container matColumnDef="email">
+    <div *matHeaderCellDef>Email</div>
+    <div *matCellDef="let user">{{user.userEmail}}</div>
   </ng-container>
 
 

@@ -17,7 +17,6 @@
 package com.needhamsoftware.nslogin.model;
 
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.voodoodyne.jackson.jsog.JSOGGenerator;
 
@@ -47,17 +46,14 @@ public class AppUser extends Persisted {
 
   @RestFilterEnable
   @Column(unique = true, length = 128)
-  @JsonIgnore // avoid user enumeration attacks
   private String userEmail;
 
-  @JsonIgnore // this should never be shipped to the user.
   @ManyToOne
   private UserSecurity securityInfo;
 
-  @JsonIgnore
   // the user's roles, populated only for Principals and derived from JWT token
   private transient List<Role> roles;
-  @JsonIgnore
+
   @OneToMany
   // permissions that the user has regardless of roles (edit self, etc)
   private List<Permission> intrinsicPermissions;
@@ -72,9 +68,11 @@ public class AppUser extends Persisted {
     securityInfo.setExpiration(null);
     securityInfo.setExpirationReason(null);
     securityInfo.setResetRequestedAt(null);
-    this.setOwner(this);
-    this.setCreatedBy(this);
     this.setCreated(Instant.now());
+  }
+
+  public AppUserRef asRef() {
+    return new AppUserRef(this);
   }
 
   public String getUsername() {
@@ -103,12 +101,10 @@ public class AppUser extends Persisted {
 
 
   @Override
-  @JsonIgnore // this should never be shipped to the user.
   public long getVersion() {
     return super.getVersion();
   }
 
-  @JsonIgnore // this should never be shipped to the user.
   public Instant getPasswordResetRequestedAt() {
     return securityInfo.getResetRequestedAt();
   }
@@ -116,30 +112,25 @@ public class AppUser extends Persisted {
   public void setPasswordResetRequestedAt(Instant ignored) {}
 
   @Override
-  @JsonIgnore // this should never be shipped to the user.
-  public AppUser getCreatedBy() {
+  public AppUserRef getCreatedBy() {
     return super.getCreatedBy();
   }
 
   @Override
-  @JsonIgnore // this should never be shipped to the user.
-  public AppUser getModifiedBy() {
+  public AppUserRef getModifiedBy() {
     return super.getModifiedBy();
   }
 
   @Override
-  @JsonIgnore // this should never be shipped to the user.
   public Instant getCreated() {
     return super.getCreated();
   }
 
   @Override
-  @JsonIgnore // this should never be shipped to the user.
   public Instant getModified() {
     return super.getModified();
   }
 
-  @JsonIgnore // this should never be shipped to the user.
   public List<Role> getRoles() {
     return roles;
   }

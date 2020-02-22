@@ -373,8 +373,8 @@ public class ObjectServiceImpl implements ObjectService {
     Instant now = Instant.now();
     persisted.setCreated(now);
     persisted.setModified(now);
-    persisted.setModifiedBy(actor);
-    persisted.setOwner(actor);
+    persisted.setModifiedBy(actor.asRef());
+    persisted.setOwner(actor.asRef());
     entityManager.persist(persisted);
     return persisted;
   }
@@ -384,7 +384,7 @@ public class ObjectServiceImpl implements ObjectService {
   @Transactional
   public Persisted update(Persisted persistMe) throws AuthzException {
     String onlyUpdate = permissionService.checkPermsAndFilter(persistMe.getClass(), "update");
-    if (!StringUtils.isBlank(onlyUpdate)) {
+    if (!StringUtils.isBlank(onlyUpdate) && !onlyUpdate.contains("*")) {
       if (Stream.of(onlyUpdate.split(",")).noneMatch(persistMe.getId().toString()::equals)) {
         throw new AuthzException();
       }
@@ -428,7 +428,7 @@ public class ObjectServiceImpl implements ObjectService {
 
     Instant now = Instant.now();
     persistMe.setModified(now);
-    persistMe.setModifiedBy(permissionService.getTopPrincipal());
+    persistMe.setModifiedBy(permissionService.getTopPrincipal().asRef());
 
     // new state introduced to the session here, hibernate will update DB if required
     return entityManager.merge(persistMe);
@@ -489,6 +489,10 @@ public class ObjectServiceImpl implements ObjectService {
 
   private <T extends Persisted> void universalWhere(Class<T> clazz, StringBuilder qlString, String specificPermittedIds) {
 
+    if (specificPermittedIds.contains("*")) {
+      qlString.append(" where (:" + OWNER_ID_PARAM + " = :" + OWNER_ID_PARAM + ") "); // still need to have this param
+      return;
+    }
     String idInClause = "";
     if (StringUtils.isNotBlank(specificPermittedIds)) {
       List<Long> allowedIds = new ArrayList<>();

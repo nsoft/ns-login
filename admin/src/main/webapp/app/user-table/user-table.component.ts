@@ -13,10 +13,10 @@ export class UserTableComponent implements OnInit {
 
 
   dataSource: UserDataSourceService;
-  displayedColumns= ["id", "name"];
+  displayedColumns= ["id","name", "email"];
 
   ngOnInit() {
     this.dataSource = new UserDataSourceService(this.nsrestService);
-    this.dataSource.loadLessons(1);
+    this.dataSource.loadUsers(1);
   }
 }

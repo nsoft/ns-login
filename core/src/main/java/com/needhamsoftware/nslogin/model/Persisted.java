@@ -28,19 +28,19 @@ public class Persisted {
   @Version
   private long version;
   @ManyToOne
-  private AppUser owner;
+  private AppUserRef owner;
   @ManyToOne
-  private AppUser createdBy;
+  private AppUserRef createdBy;
   @ManyToOne
-  private AppUser modifiedBy;
+  private AppUserRef modifiedBy;
   private Instant created;
   private Instant modified;
 
-  public AppUser getOwner() {
+  public AppUserRef getOwner() {
     return owner;
   }
 
-  public void setOwner(AppUser owner) {
+  public void setOwner(AppUserRef owner) {
     this.owner = owner;
   }
 
@@ -60,19 +60,19 @@ public class Persisted {
     this.version = version;
   }
 
-  public AppUser getCreatedBy() {
+  public AppUserRef getCreatedBy() {
     return createdBy;
   }
 
-  void setCreatedBy(AppUser createdBy) {
+  void setCreatedBy(AppUserRef createdBy) {
     this.createdBy = createdBy;
   }
 
-  public AppUser getModifiedBy() {
+  public AppUserRef getModifiedBy() {
     return modifiedBy;
   }
 
-  public void setModifiedBy(AppUser modifiedBy) {
+  public void setModifiedBy(AppUserRef modifiedBy) {
     this.modifiedBy = modifiedBy;
   }
 

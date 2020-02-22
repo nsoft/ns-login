@@ -1,0 +1,18 @@
+.users-table {
+  max-width: 1000px;
+  margin: 10px;
+  mat-row {
+    border-top: solid black 1px;
+  }
+  mat-header-row {
+    font-weight: 500;
+    color: darkblue;
+  }
+  mat-row,mat-header-row {
+    >div {
+      width: 100%;
+      padding: 20px;
+      border-left: solid lightblue 1px;
+    }
+  }
+}

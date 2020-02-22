@@ -42,8 +42,15 @@
             <property name="hibernate.dbcp.testOnReturn" value="true" />
             <property name="hibernate.dbcp.validationQuery" value="SELECT 1" />
 
-            <!-- Uncomment this next line to bootstrap a database auotmaticall -->
-<!--             <property name="hibernate.hbm2ddl.auto" value="update" />-->
+            <!-- Uncomment this next line to bootstrap a database automatically -->
+            <!--
+
+            BE AWARE that running ANY warfile with this last property enabled will effect
+            the database for all (they all use the same DB). values of create or create-drop
+            will delete the ENTIRE database
+
+            -->
+<!--            <property name="hibernate.hbm2ddl.auto" value="create" />-->
         </properties>
 
     </persistence-unit>
