@@ -19,7 +19,6 @@ package com.needhamsoftware.nslogin.servlet;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.needhamsoftware.nslogin.model.AppUser;
 import com.needhamsoftware.nslogin.model.Role;
 import io.jsonwebtoken.Jwts;
@@ -58,26 +57,13 @@ public class LoginServlet extends HttpServlet implements LoginConstants {
   private static final String USER_NAME_OR_PASSWORD_INCORRECT = "Email or password incorrect.";
   private static final String LOGIN_FORM_EMAIL = "LOGIN_FORM_EMAIL";
 
-  private volatile String lastKey;
+  private volatile String currentKey;
 
-  private LoadingCache<String, KeyPair> keyCache = CacheBuilder.newBuilder().expireAfterWrite(LoginConstants.KEY_CHANGE_SECONDS, TimeUnit.SECONDS).build(
+  private LoadingCache<String, KeyPair> keys = CacheBuilder.newBuilder().expireAfterWrite(LoginConstants.KEY_EXPIRE_SECONDS, TimeUnit.SECONDS).build(
       new CacheLoader<>() {
         @Override
         public KeyPair load(String key) {
-          // fresh key every 30 min
-          lastKey = key;
-          KeyPair keyPair = Keys.keyPairFor(LoginConstants.SIGNATURE_ALGORITHM);
-          oldKeys.put(key, keyPair);
-          return keyPair;
-        }
-      }
-  );
-
-  private LoadingCache<String, KeyPair> oldKeys = CacheBuilder.newBuilder().expireAfterWrite(LoginConstants.KEY_EXPIRE_SECONDS, TimeUnit.SECONDS).build(
-      new CacheLoader<>() {
-        @Override
-        public KeyPair load(String key) {
-          throw new InvalidCacheLoadException("Public Key for kid=" + key + " not found");
+          return null; // loading cache allows type safety. but we don't need loading here.
         }
       }
   );
@@ -100,23 +86,26 @@ public class LoginServlet extends HttpServlet implements LoginConstants {
     Query query = em.createQuery("select count(*) from AppUser");
     Object singleResult = query.getSingleResult();
     log.info("FOUND {} user records on startup", singleResult);
+
+    // Set up our first key.
+    currentKey = UUID.randomUUID().toString();
+    KeyPair keyPair = Keys.keyPairFor(LoginConstants.SIGNATURE_ALGORITHM);
+    keys.put(currentKey, keyPair);
+
     ex.execute(() -> {
       while (true) {
-        boolean empty = keyCache.asMap().keySet().isEmpty();
-        if (empty) {
-          try {
-            // we uses a random UUID to make it very difficult for an attacker to
-            // predict and fish for the current list of keys
-            keyCache.get(UUID.randomUUID().toString());
-          } catch (ExecutionException e) {
-            e.printStackTrace();
-          }
-        }
         try {
-          Thread.sleep(1000);
+          // This interval must be shorter than KEY_EXPIRE_SECONDS
+          // otherwise we could have no keys with which to generate a token
+          Thread.sleep(30 * 60 * 1000); // wait 30 min
         } catch (InterruptedException e) {
           break;
         }
+
+        // Periodically create a new key (old key still valid till restart or keys cache expires).
+        currentKey = UUID.randomUUID().toString();
+        KeyPair kp = Keys.keyPairFor(LoginConstants.SIGNATURE_ALGORITHM);
+        keys.put(currentKey, kp);
       }
     });
   }
@@ -175,8 +164,8 @@ public class LoginServlet extends HttpServlet implements LoginConstants {
           // generate JWT
           KeyPair keyPair;
           try {
-            final String lk = this.lastKey; // only access this once to avoid race condition!
-            keyPair = keyCache.get(lk);
+            final String lk = this.currentKey; // only access this once to avoid race condition!
+            keyPair = keys.get(lk);
             String jws = Jwts.builder()
                 .setIssuer(ISSUER)
                 .setHeaderParam("kid", lk)
@@ -209,23 +198,15 @@ public class LoginServlet extends HttpServlet implements LoginConstants {
     } else {
       // this is a request for a public key for verifying our token.
       try {
-
-        KeyPair keyPair = oldKeys.get(kid[0]);
+        KeyPair keyPair = keys.get(kid[0]);
         if (keyPair == null) {
-          resp.sendError(410);
+          resp.sendError(410, "Requested key:" + kid[0] + " is unknown or has expired.");
           return;
         }
         byte[] encoded = keyPair.getPublic().getEncoded();
         resp.getOutputStream().write(encoded);
 
-      } catch (ExecutionException e) {
-        throw new ServletException(e);
-      } catch (UncheckedExecutionException e) {
-        if (e.getCause() instanceof CacheLoader.InvalidCacheLoadException) {
-          log.error("Invalid Key ID:" + kid[0], e);
-          req.getRequestDispatcher("/error.jsp").forward(req, resp);
-          return;
-        }
+      } catch (Exception e) {
         throw new ServletException(e);
       }
     }
