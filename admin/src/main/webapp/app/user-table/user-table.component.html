@@ -1,4 +1,18 @@
 <mat-table class="users-table mat-elevation-z8" [dataSource]="dataSource">
+  <ng-container matColumnDef="select">
+    <div mat-header-cell *matHeaderCellDef>
+      <mat-checkbox (change)="$event ? masterToggle() : null"
+                    [checked]="selection.hasValue() && isAllSelected()"
+                    [indeterminate]="selection.hasValue() && !isAllSelected()">
+      </mat-checkbox>
+    </div>
+    <div mat-cell *matCellDef="let row">
+      <mat-checkbox (click)="$event.stopPropagation()"
+                    (change)="$event ? selection.toggle(row) : null"
+                    [checked]="selection.isSelected(row)">
+      </mat-checkbox>
+    </div>
+  </ng-container>
 
   <ng-container matColumnDef="id">
     <div *matHeaderCellDef>Id</div>

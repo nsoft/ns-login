@@ -1,15 +1,15 @@
 import {Injectable} from '@angular/core';
-import {CollectionViewer} from "@angular/cdk/collections";
-import {BehaviorSubject, Observable, of} from "rxjs";
-import {NSRESTService} from "../ns-rest.service";
-import {catchError, finalize} from "rxjs/operators";
+import {CollectionViewer} from '@angular/cdk/collections';
+import {BehaviorSubject, Observable, of} from 'rxjs';
+import {NSRESTService} from '../ns-rest.service';
+import {catchError, finalize} from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
 })
 export class UserDataSourceService {
 
-  private lessonsSubject = new BehaviorSubject<any[]|[]>([]);
+  private usersSubject = new BehaviorSubject<any[]|[]>([]);
 
   private loadingSubject = new BehaviorSubject<boolean>(false);
 
@@ -19,24 +19,29 @@ export class UserDataSourceService {
 
   // noinspection JSUnusedLocalSymbols
   connect(collectionViewer: CollectionViewer): Observable<any[]|[]> {
-    return this.lessonsSubject.asObservable();
+    return this.usersSubject.asObservable();
   }
 
   // noinspection JSUnusedLocalSymbols
   disconnect(collectionViewer: CollectionViewer): void {
-    this.lessonsSubject.complete();
+    this.usersSubject.complete();
     this.loadingSubject.complete();
   }
 
-  loadUsers(courseId: number, filter = '',
-            sort = 'asc', start = 0, rows = 5) {
+  loadUsers(start = 0,
+            rows = 5, filter = '', sort = 'asc') {
 
     this.loadingSubject.next(true);
 
-    this.rest.find("AppUser", filter, sort, start, rows).pipe(
-      catchError(() => of([])),
-      finalize(() => this.loadingSubject.next(false))
-    )
-      .subscribe(lessons => this.lessonsSubject.next(lessons));
+    this.rest.find('AppUser', filter, sort, start, rows)
+      .pipe(
+        catchError(() => of([])),
+        finalize(() => this.loadingSubject.next(false))
+      )
+      .subscribe(users => this.usersSubject.next(users));
+  }
+
+  data() {
+    return this.usersSubject.getValue();
   }
 }
