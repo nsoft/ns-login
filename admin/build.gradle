@@ -38,7 +38,8 @@ war {
 
 task ngBuild(type:Exec) {
   workingDir "$projectDir"
-  commandLine 'ng', 'build'
+  // bash -i -c necessary for nvm, otherwise PATH variable is wrong: https://youtrack.jetbrains.com/issue/IDEA-133299
+  commandLine 'bash', '-i', '-c', 'ng build'
 }
 
 task ngCopyIndex(type: Copy, dependsOn: ngBuild) {
