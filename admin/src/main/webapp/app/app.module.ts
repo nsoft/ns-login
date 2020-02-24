@@ -12,11 +12,13 @@ import {MatSortModule} from '@angular/material/sort';
 import {MatTableModule} from '@angular/material/table';
 import {UserTableComponent} from './user-table/user-table.component';
 import {MatCheckboxModule} from '@angular/material/checkbox';
+import {UserDetailComponent} from './user-detail/user-detail.component';
 
 @NgModule({
   declarations: [
     AppComponent,
-    UserTableComponent
+    UserTableComponent,
+    UserDetailComponent
   ],
     imports: [
         BrowserModule,

@@ -3,13 +3,14 @@ import {CollectionViewer} from '@angular/cdk/collections';
 import {BehaviorSubject, Observable, of} from 'rxjs';
 import {NSRESTService} from '../ns-rest.service';
 import {catchError, finalize} from 'rxjs/operators';
+import {User} from '../model/User';
 
 @Injectable({
   providedIn: 'root'
 })
 export class UserDataSourceService {
 
-  private usersSubject = new BehaviorSubject<any[]|[]>([]);
+  private usersSubject = new BehaviorSubject<User[]>([]);
 
   private loadingSubject = new BehaviorSubject<boolean>(false);
 

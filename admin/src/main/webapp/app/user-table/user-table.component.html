@@ -1,15 +1,15 @@
 <mat-table class="users-table mat-elevation-z8" [dataSource]="dataSource">
   <ng-container matColumnDef="select">
     <div mat-header-cell *matHeaderCellDef>
-      <mat-checkbox (change)="$event ? masterToggle() : null"
+      <mat-checkbox style="visibility: hidden" (change)="$event ? masterToggle() : null"
                     [checked]="selection.hasValue() && isAllSelected()"
                     [indeterminate]="selection.hasValue() && !isAllSelected()">
       </mat-checkbox>
     </div>
-    <div mat-cell *matCellDef="let row">
-      <mat-checkbox (click)="$event.stopPropagation()"
-                    (change)="$event ? selection.toggle(row) : null"
-                    [checked]="selection.isSelected(row)">
+    <div mat-cell *matCellDef="let user">
+      <mat-checkbox (click)="rowClicked($event, user)"
+                    (change)="$event ? selection.toggle(user) : null"
+                    [checked]="selection.isSelected(user)">
       </mat-checkbox>
     </div>
   </ng-container>
@@ -29,9 +29,10 @@
     <div *matCellDef="let user">{{user.userEmail}}</div>
   </ng-container>
 
-
   <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
 
   <mat-row *matRowDef="let row; columns: displayedColumns"></mat-row>
 
 </mat-table>
+
+<app-user-detail [user]="clickedUser"></app-user-detail>

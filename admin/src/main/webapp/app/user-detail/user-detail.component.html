@@ -1,0 +1,9 @@
+<div *ngIf="user" class="userDetail">
+  <h2>User {{user.id}}</h2>
+<dl>
+  <dt>Email:</dt><dd>{{user.userEmail}}</dd>
+  <dt>Username:</dt><dd>{{user.username}}</dd>
+  <dt>Roles:</dt><dd><div><ul *ngFor="let role of user.roles" ><li>{{role.name}}</li></ul></div></dd>
+  <dt>Intrinsic Permissions:</dt><dd><div><ul *ngFor="let perm of user.intrinsicPermissions" ><li>{{perm.type}}:{{perm.action}}:{{perm.objId}}:{{perm.field}}</li></ul></div></dd>
+</dl>
+</div>

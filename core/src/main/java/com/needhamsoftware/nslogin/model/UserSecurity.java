@@ -17,6 +17,7 @@
 package com.needhamsoftware.nslogin.model;
 
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.voodoodyne.jackson.jsog.JSOGGenerator;
 
@@ -28,8 +29,11 @@ import java.time.Instant;
 @JsonIdentityInfo(generator= JSOGGenerator.class)
 @JsonIgnoreProperties(ignoreUnknown=true)
 public class UserSecurity extends Persisted {
+  @JsonIgnore
   private String passwordHash;
+  @JsonIgnore
   private String salt;
+  @JsonIgnore
   private String resetToken;
   private Instant resetRequestedAt;
   private Instant expiration;

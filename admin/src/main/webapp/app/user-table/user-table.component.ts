@@ -2,6 +2,7 @@ import {Component, OnInit} from '@angular/core';
 import {UserDataSourceService} from './user-data-source.service';
 import {NSRESTService} from '../ns-rest.service';
 import {SelectionModel} from '@angular/cdk/collections';
+import {User} from '../model/User';
 
 @Component({
   selector: 'app-user-table',
@@ -12,10 +13,10 @@ export class UserTableComponent implements OnInit {
 
   constructor(private nsrestService: NSRESTService) {}
 
-
   dataSource: UserDataSourceService;
   displayedColumns = ['select', 'id', 'name', 'email'];
-  selection = new SelectionModel(true, null);
+  selection = new SelectionModel(false, null);
+  clickedUser: User;
 
   ngOnInit() {
     this.dataSource = new UserDataSourceService(this.nsrestService);
@@ -34,5 +35,10 @@ export class UserTableComponent implements OnInit {
     this.isAllSelected() ?
       this.selection.clear() :
       this.dataSource.data().forEach(row => this.selection.select(row));
+  }
+
+  rowClicked(event, user) {
+    event.stopPropagation();
+    this.clickedUser = user;
   }
 }
