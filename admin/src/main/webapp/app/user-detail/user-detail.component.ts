@@ -155,11 +155,11 @@ export class UserDetailComponent implements OnInit {
 
   private _filterRoles(value: string): Role[] {
     const filterValue = value.toLowerCase();
-    return this.allRoles.filter(role => role.name.toLowerCase().indexOf(filterValue) === 0);
+    return this.allRoles.filter(role => role.name.toLowerCase().indexOf(filterValue) >= 0);
   }
 
   private _filterPerms(value: string): Permission[] {
     const filterValue = value.toLowerCase();
-    return this.allPermissions.filter(perm => this.permString(perm).toLowerCase().indexOf(filterValue) === 0);
+    return this.allPermissions.filter(perm => this.permString(perm).toLowerCase().indexOf(filterValue) >= 0);
   }
 }

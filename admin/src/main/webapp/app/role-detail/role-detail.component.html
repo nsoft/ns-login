@@ -1,0 +1,37 @@
+<div *ngIf="role" class="roleDetail">
+  <h2>Role {{role.id}}</h2>
+  <dl>
+    <dt>Key:</dt><dd>{{role.key}}</dd>
+    <dt>Friendly Name:</dt><dd>{{role.name}}</dd>
+
+    <dt><label for="permissionInput">Intrinsic Permissions:</label></dt>
+    <dd><div class="chipField">
+      <mat-form-field>
+        <mat-chip-list #chipListPermissions aria-label="Permission selection" >
+          <mat-chip *ngFor="let perm of role.grants"
+                    [selectable]="selectable"
+                    [removable]="removable"
+                    (removed)="removePerm(perm)">
+            {{permString(perm)}}
+            <mat-icon matChipRemove *ngIf="removable">cancel</mat-icon></mat-chip>
+          <input id="permissionInput" #permissionInput
+                 placeholder="Type to add permissions to role {{role.id}}"
+                 [formControl]="permissionCtrl"
+                 [matAutocomplete]="autoPerms"
+                 [matChipInputFor]="chipListPermissions"
+                 [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
+                 (matChipInputTokenEnd)="addPermission($event)">
+        </mat-chip-list>
+        <mat-autocomplete
+          #autoPerms="matAutocomplete"
+          (optionSelected)="selectedPermission($event)">
+          <mat-option
+            *ngFor="let perm of filteredPermissions | async"
+            [value]="permString(perm)">
+            {{permString(perm)}}
+          </mat-option>
+        </mat-autocomplete>
+      </mat-form-field>
+    </div></dd>
+  </dl>
+</div>

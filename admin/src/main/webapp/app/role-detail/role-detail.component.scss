@@ -1,0 +1,55 @@
+.roleDetail {
+  max-width: 1000px;
+  h2 {
+    margin-left: 10px;
+  }
+}
+
+dl {
+  display: grid;
+  grid-template-columns: 25% 75%;
+  grid-template-rows: 72px 72px auto;
+  margin:10px;
+  box-shadow: #898989 1px 10px 15px;
+  width: 100%;
+}
+
+dt,dd {
+  margin: 0;
+  border-bottom: solid 1px lightgray;
+  border-collapse: collapse;
+  padding: 10px
+
+}
+
+dt {
+  font-weight: bold;
+  button {
+    float:right;
+    margin: -5px;
+    line-height: 27px;
+    background: plum;
+  }
+}
+
+dd {
+  ul {
+    padding-left: 0;
+    margin-right: 5px;
+    li {
+      border: solid 1px white;
+      background: #99c2ff;
+      border-radius: 5px;
+      display: inline;
+      margin: 0;
+      padding:3px;
+
+    }
+  }
+  .chipField {
+    width: 100%;
+    .mat-form-field {
+      width: 100%;
+    }
+  }
+}

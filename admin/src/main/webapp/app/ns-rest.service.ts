@@ -42,7 +42,7 @@ export class NSRESTService {
         return throwError(error);
       }),
       // tslint:disable-next-line:no-string-literal
-      map(res => res['results'].map(r => JSOG.decode(r)))
+      map(res => JSOG.decode(res)['results'])
     );
   }
 

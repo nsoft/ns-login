@@ -22,6 +22,7 @@ import {MatAutocompleteModule} from '@angular/material/autocomplete';
 import {MatTabsModule} from '@angular/material/tabs';
 import {RoleTableComponent} from './role-table/role-table.component';
 import {PermissionTableComponent} from './permission-table/permission-table.component';
+import {RoleDetailComponent} from './role-detail/role-detail.component';
 
 
 @NgModule({
@@ -31,6 +32,7 @@ import {PermissionTableComponent} from './permission-table/permission-table.comp
     UserDetailComponent,
     RoleTableComponent,
     PermissionTableComponent,
+    RoleDetailComponent,
   ],
   imports: [
     BrowserModule,

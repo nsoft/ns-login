@@ -43,9 +43,9 @@ export class RoleTableComponent implements OnInit {
       this.dataSource.data().forEach(row => this.selection.select(row));
   }
 
-  rowClicked(event, user) {
+  rowClicked(event, role) {
     event.stopPropagation();
-    this.clickedRole = user;
+    this.clickedRole = role;
   }
 
   onUpdate() {
