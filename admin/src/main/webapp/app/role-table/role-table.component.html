@@ -1,0 +1,39 @@
+<mat-table class="roles-table mat-elevation-z8" [dataSource]="dataSource" >
+  <ng-container matColumnDef="select">
+    <div mat-header-cell *matHeaderCellDef>
+      <mat-checkbox style="visibility: hidden" (change)="$event ? masterToggle() : null"
+                    [checked]="selection.hasValue() && isAllSelected()"
+                    [indeterminate]="selection.hasValue() && !isAllSelected()">
+      </mat-checkbox>
+    </div>
+    <div mat-cell *matCellDef="let role">
+      <mat-checkbox (click)="rowClicked($event, role)"
+                    (change)="$event ? selection.toggle(role) : null"
+                    [checked]="selection.isSelected(role)">
+      </mat-checkbox>
+    </div>
+  </ng-container>
+
+  <ng-container matColumnDef="id">
+    <div *matHeaderCellDef>Id</div>
+    <div *matCellDef="let role">{{role.id}}</div>
+  </ng-container>
+
+  <ng-container matColumnDef="key">
+    <div *matHeaderCellDef>Key Name</div>
+    <div *matCellDef="let role">{{role.key}}</div>
+  </ng-container>
+
+  <ng-container matColumnDef="name">
+    <div *matHeaderCellDef>Friendly Name</div>
+    <div *matCellDef="let role">{{role.name}}</div>
+  </ng-container>
+
+
+  <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
+
+  <mat-row *matRowDef="let row; columns: displayedColumns"></mat-row>
+
+</mat-table>
+
+<!--<app-user-detail [user]="clickedRole" (updated)="onUpdate()"></app-user-detail>-->

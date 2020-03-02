@@ -9,8 +9,12 @@
 
 <div class="content" role="main">
 
-  <app-user-table></app-user-table>
 
+  <mat-tab-group>
+    <mat-tab label="Users"> <app-user-table></app-user-table> </mat-tab>
+    <mat-tab label="Roles"><app-role-table></app-role-table> </mat-tab>
+    <mat-tab label="Permissions"> Content 3 </mat-tab>
+  </mat-tab-group>
 
   <svg id="clouds" alt="Gray Clouds Background" xmlns="http://www.w3.org/2000/svg" width="2611.084" height="485.677"
        viewBox="0 0 2611.084 485.677">

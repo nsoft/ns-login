@@ -19,6 +19,8 @@ import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {MatChipsModule} from '@angular/material/chips';
 import {MatIconModule} from '@angular/material/icon';
 import {MatAutocompleteModule} from '@angular/material/autocomplete';
+import {MatTabsModule} from '@angular/material/tabs';
+import {RoleTableComponent} from './role-table/role-table.component';
 
 
 @NgModule({
@@ -26,6 +28,7 @@ import {MatAutocompleteModule} from '@angular/material/autocomplete';
     AppComponent,
     UserTableComponent,
     UserDetailComponent,
+    RoleTableComponent,
   ],
   imports: [
     BrowserModule,
@@ -44,7 +47,8 @@ import {MatAutocompleteModule} from '@angular/material/autocomplete';
     MatChipsModule,
     MatIconModule,
     MatAutocompleteModule,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    MatTabsModule
   ],
   entryComponents: [
   ],
