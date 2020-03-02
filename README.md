@@ -4,6 +4,8 @@
 A basic system designed to protect single page (Angular/etc) web pages deployed
 on a J2EE servlet container. 
 
+**This is now ready for use and provides:**
+
 * Redirect to login/logout
 * Single Sign On across J2EE contexts
 * Password reset via email
@@ -17,7 +19,7 @@ on a J2EE servlet container.
   * Actions to specify complex server side operations beyond CRUD
   * _Optional_ javascript library for simplified interaction and caching
 * _Optional_ Authorization via Apache Shiro with database backed permissions
-* _WIP: Optional web UI for simple user management_
+* _Optional_ web UI for simple user management
 
 The basic login/logout features can be added to any existing application by adding a servlet 
 filter. Shiro Authorization presently requires a Guice environment. Any of the supplied
@@ -119,8 +121,10 @@ unsuitable (or you have out grown it).
 1. **REST API stub** - serving JSOG encoded object graphs for user objects including not
    exposing sensitive info such as passwords, and properly breaking the chain of created_by
    and modified_by to avoid pulling back long graphs of users based on who created who.
-1. **Simple User Management App** - (TODO) using the rest api to manually add users,
-   manually suspend users. Manually force password reset. (database integrated only no LDAP etc)
+1. **Simple User Management App** - Uses the rest api to manually add roles and 
+   permissions to users, (database integrated only no LDAP etc). Just enough
+   to facilitate development. It is expected that this would be enhanced according
+   to the needs of the application.
    
 Database access is mapped with hibernate/JPA via a common object model.
 If you don't already have a database, any of these apps can bootstrap it via hibernate's 
@@ -130,14 +134,19 @@ by Hibernate. Of course this should just be an initial starting point and good D
 change management practices via liquibase or similar are your responsibility going 
 forward.   
 
-With these 4 components easily deployed, just add your UI and REST code to implement
+With these 6 components easily deployed, just add your UI and REST code to implement
 your idea for the next facebook (or whatever)!
 
 ## Intended Usage
 
 It will never be feasible for these war-files to be configurable enough to be usable 
 without modification, so the expectation is that you download the code from this 
-repository, and then check it into your own repo to bootstrap your repository. 
+repository just once, and then check it into your own repo to bootstrap your repository.
+
+There is NO expectation for consuming subsequent upgrades. Zero effort at
+backwards compatibility will be put forth. Issue reports are welcome for the benefit
+of all, but there will be no upgrading it aside from copying any changes
+you see in the fix by hand. This is a starter kit not a framework.
 
 It is expected that you be facile with J2EE and web concepts like web.xml files
 request redirection, and Object Relational Mapping.

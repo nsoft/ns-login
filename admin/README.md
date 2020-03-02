@@ -2,6 +2,11 @@
 
 A Basic User Administration application written using Angular2/Angular CLI.
 
+Note that this really only enables viewing of users and assigning roles and 
+permissions. Adding users is not possible, and will likely never be added
+because that's likely to be business specific. The tables are presently
+not paginated, but that might be added in the future.
+
 To make this play nice with the J2EE packaging structure, index.html is a generated file and 
 all work should be done in wip.html. The gradle build target has been configured to also run 
 `ng build` and copy the generated wip.html to index.html for the war file build. The idea
