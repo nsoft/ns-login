@@ -2,7 +2,7 @@ import {Injectable} from '@angular/core';
 import {BehaviorSubject, Observable, of} from 'rxjs';
 import {NSRESTService} from './ns-rest.service';
 import {CollectionViewer} from '@angular/cdk/collections';
-import {catchError, finalize} from 'rxjs/operators';
+import {catchError, tap} from 'rxjs/operators';
 import {Permission} from './model/Permission';
 
 @Injectable({
@@ -17,10 +17,11 @@ export class PermissionDataSourceService {
 
   public loading$ = this.loadingSubject.asObservable();
 
-  constructor(private rest: NSRESTService) { }
+  constructor(private rest: NSRESTService) {
+  }
 
   // noinspection JSUnusedLocalSymbols
-  connect(collectionViewer: CollectionViewer): Observable<any[]|[]> {
+  connect(collectionViewer: CollectionViewer): Observable<any[] | []> {
     return this.permissionsSubject.asObservable();
   }
 
@@ -31,16 +32,15 @@ export class PermissionDataSourceService {
   }
 
   loadPermissions(start = 0,
-                  rows = 99999, filter = '', sort = 'asc') {
+                  rows = 99999, filter = '', sort = 'asc'): Observable<Permission[]> {
 
     this.loadingSubject.next(true);
 
-    this.rest.find('Permission', filter, sort, start, rows)
+    return this.rest.find('Permission', filter, sort, start, rows)
       .pipe(
         catchError(() => of([])),
-        finalize(() => this.loadingSubject.next(false))
-      )
-      .subscribe(permissions => this.permissionsSubject.next(permissions));
+        tap(roles => this.permissionsSubject.next(roles))
+      );
   }
 
   data() {

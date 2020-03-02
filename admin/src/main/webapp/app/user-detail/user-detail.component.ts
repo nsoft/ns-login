@@ -19,32 +19,46 @@ import {map, startWith} from 'rxjs/operators';
 })
 export class UserDetailComponent implements OnInit {
 
+  constructor(private REST: NSRESTService) {
+    this.filteredRoles = this.roleCtrl.valueChanges.pipe(
+      startWith(null),
+      map((roleTypedStr: string | null) => roleTypedStr ? this._filterRoles(roleTypedStr) : this.allRoles.slice()));
+    this.filteredPermissions = this.permissionCtrl.valueChanges.pipe(
+      startWith(null),
+      map((permStr: string | null) => permStr ? this._filterPerms(permStr) : this.allPermissions.slice()));
+  }
+
   @Input() user: User;
-  private roleSource: RoleDataSourceService;
   removable = true;
   selectable = true;
   readonly separatorKeysCodes: number[] = [ENTER, COMMA, TAB];
   addOnBlur = true;
+
+  private roleSource: RoleDataSourceService;
   private permissionSource: PermissionDataSourceService;
+
   @ViewChild('roleInput') roleInput: ElementRef<HTMLInputElement>;
-  @ViewChild('auto') matAutocomplete: MatAutocomplete;
+  @ViewChild('permissionInput') permissionInput: ElementRef<HTMLInputElement>;
+  @ViewChild('autoRoles') matAutocompleteRoles: MatAutocomplete;
+  @ViewChild('autoPerms') matAutocompletePerms: MatAutocomplete;
   roleCtrl = new FormControl();
+  permissionCtrl = new FormControl();
   filteredRoles: Observable<Role[]>;
+  filteredPermissions: Observable<Permission[]>;
   private allRoles: Role[] = [];
+  private allPermissions: Permission[] = [];
   @Output() updated = new EventEmitter<User>();
 
-  constructor(private REST: NSRESTService) {
-    this.filteredRoles  = this.roleCtrl.valueChanges.pipe(
-      startWith(null),
-      map((roleTypedStr: string | null) => roleTypedStr ? this._filter(roleTypedStr) : this.allRoles.slice()));
+  permString(perm: Permission): string {
+    return perm.action + ':' + perm.type + ':' + perm.objId + ':' + perm.field;
   }
 
   ngOnInit(): void {
     this.roleSource = new RoleDataSourceService(this.REST);
-    this.roleSource.loadRoles().toPromise().then((roleSource) => this.allRoles = roleSource);
+    this.roleSource.loadRoles().toPromise().then((roles) => this.allRoles = roles);
 
     this.permissionSource = new PermissionDataSourceService(this.REST);
-    this.permissionSource.loadPermissions();
+    this.permissionSource.loadPermissions().toPromise().then((perms) => this.allPermissions = perms);
   }
 
 
@@ -69,8 +83,8 @@ export class UserDetailComponent implements OnInit {
   private updateUser() {
     this.REST.update('AppUser', this.user).subscribe(() => {
       this.updated.emit(this.user);
-      this.REST.get('AppUser', this.user.id).subscribe( (u) => this.user = u[0]);
-      this.roleSource.loadRoles().toPromise().then((roleSource) => this.allRoles = roleSource);
+      this.REST.get('AppUser', this.user.id).subscribe((u) => this.user = u[0]);
+      this.roleSource.loadRoles().toPromise().then((roles) => this.allRoles = roles);
     });
   }
 
@@ -83,7 +97,7 @@ export class UserDetailComponent implements OnInit {
       this.user.roles = [];
     }
     if ((value || '').trim()) {
-      const role = this._filter(value.trim())[0];
+      const role = this._filterRoles(value.trim())[0];
       role.members.push(this.user);
       this.user.roles.push(role);
     }
@@ -97,19 +111,55 @@ export class UserDetailComponent implements OnInit {
     this.updateUser();
   }
 
+  addPermission(event: MatChipInputEvent) {
+    const input = event.input;
+    const value = event.value;
+
+    // Add our role
+    if (!this.user.intrinsicPermissions) {
+      this.user.intrinsicPermissions = [];
+    }
+    if ((value || '').trim()) {
+      const perm = this._filterPerms(value.trim())[0];
+      this.user.intrinsicPermissions.push(perm);
+    }
+
+    // Reset the input value
+    if (input) {
+      input.value = '';
+    }
+
+    this.permissionCtrl.setValue(null);
+    this.updateUser();
+  }
 
   selectedRole(event: MatAutocompleteSelectedEvent) {
     if (!this.user.roles) {
       this.user.roles = [];
     }
-    this.user.roles.push(this._filter(event.option.viewValue)[0]);
+    this.user.roles.push(this._filterRoles(event.option.viewValue)[0]);
     this.updateUser();
     this.roleInput.nativeElement.value = '';
     this.roleCtrl.setValue(null);
   }
 
-  private _filter(value: string): Role[] {
+  selectedPermission(event: MatAutocompleteSelectedEvent) {
+    if (!this.user.intrinsicPermissions) {
+      this.user.intrinsicPermissions = [];
+    }
+    this.user.intrinsicPermissions.push(this._filterPerms(event.option.viewValue)[0]);
+    this.updateUser();
+    this.permissionInput.nativeElement.value = '';
+    this.permissionCtrl.setValue(null);
+  }
+
+  private _filterRoles(value: string): Role[] {
     const filterValue = value.toLowerCase();
     return this.allRoles.filter(role => role.name.toLowerCase().indexOf(filterValue) === 0);
+  }
+
+  private _filterPerms(value: string): Permission[] {
+    const filterValue = value.toLowerCase();
+    return this.allPermissions.filter(perm => this.permString(perm).toLowerCase().indexOf(filterValue) === 0);
   }
 }

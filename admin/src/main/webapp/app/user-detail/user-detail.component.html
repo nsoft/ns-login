@@ -17,13 +17,13 @@
         <input id="roleInput" #roleInput
                placeholder="Type to add roles for user {{user.id}}"
                [formControl]="roleCtrl"
-               [matAutocomplete]="auto"
+               [matAutocomplete]="autoRoles"
                [matChipInputFor]="chipListRoles"
                [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
                (matChipInputTokenEnd)="addRole($event)">
       </mat-chip-list>
       <mat-autocomplete
-        #auto="matAutocomplete"
+        #autoRoles="matAutocomplete"
         (optionSelected)="selectedRole($event)">
         <mat-option
           *ngFor="let role of filteredRoles | async"
@@ -33,13 +33,34 @@
       </mat-autocomplete>
     </mat-form-field>
   </div></dd>
-  <dt>Intrinsic Permissions:</dt>
-  <dd><div class="chipField" *ngIf="user.intrinsicPermissions">
-    <mat-chip-list #chipListPermissions aria-label="Permission selection" >
-      <mat-chip *ngFor="let perm of user.intrinsicPermissions" [selectable]="selectable"
-                [removable]="removable" (removed)="removePerm(perm)">{{perm.type}}:{{perm.action}}:{{perm.objId}}:{{perm.field}}
-        <mat-icon matChipRemove *ngIf="removable">cancel</mat-icon></mat-chip>
-    </mat-chip-list>
+  <dt><label for="permissionInput">Intrinsic Permissions:</label></dt>
+  <dd><div class="chipField">
+    <mat-form-field>
+      <mat-chip-list #chipListPermissions aria-label="Permission selection" >
+        <mat-chip *ngFor="let perm of user.intrinsicPermissions"
+                  [selectable]="selectable"
+                  [removable]="removable"
+                  (removed)="removePerm(perm)">
+          {{perm.type}}:{{perm.action}}:{{perm.objId}}:{{perm.field}}
+          <mat-icon matChipRemove *ngIf="removable">cancel</mat-icon></mat-chip>
+        <input id="permissionInput" #permissionInput
+               placeholder="Type to add permissions to user {{user.id}}"
+               [formControl]="permissionCtrl"
+               [matAutocomplete]="autoPerms"
+               [matChipInputFor]="chipListPermissions"
+               [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
+               (matChipInputTokenEnd)="addPermission($event)">
+      </mat-chip-list>
+      <mat-autocomplete
+        #autoPerms="matAutocomplete"
+        (optionSelected)="selectedPermission($event)">
+        <mat-option
+          *ngFor="let perm of filteredPermissions | async"
+          [value]="permString(perm)">
+          {{permString(perm)}}
+        </mat-option>
+      </mat-autocomplete>
+    </mat-form-field>
   </div></dd>
 </dl>
 </div>
