@@ -1,0 +1,49 @@
+<mat-table class="perms-table mat-elevation-z8" [dataSource]="dataSource" >
+  <ng-container matColumnDef="select">
+    <div mat-header-cell *matHeaderCellDef>
+      <mat-checkbox style="visibility: hidden" (change)="$event ? masterToggle() : null"
+                    [checked]="selection.hasValue() && isAllSelected()"
+                    [indeterminate]="selection.hasValue() && !isAllSelected()">
+      </mat-checkbox>
+    </div>
+    <div mat-cell *matCellDef="let perm">
+      <mat-checkbox (click)="rowClicked($event, perm)"
+                    (change)="$event ? selection.toggle(perm) : null"
+                    [checked]="selection.isSelected(perm)">
+      </mat-checkbox>
+    </div>
+  </ng-container>
+
+  <ng-container matColumnDef="id">
+    <div *matHeaderCellDef>Id</div>
+    <div *matCellDef="let perm">{{perm.id}}</div>
+  </ng-container>
+
+  <ng-container matColumnDef="action">
+    <div *matHeaderCellDef>Action</div>
+    <div *matCellDef="let perm">{{perm.action}}</div>
+  </ng-container>
+
+  <ng-container matColumnDef="type">
+    <div *matHeaderCellDef>Type</div>
+    <div *matCellDef="let perm">{{perm.type}}</div>
+  </ng-container>
+
+  <ng-container matColumnDef="objId">
+    <div *matHeaderCellDef>Object Id</div>
+    <div *matCellDef="let perm">{{perm.objId}}</div>
+  </ng-container>
+
+  <ng-container matColumnDef="field">
+    <div *matHeaderCellDef>Field</div>
+    <div *matCellDef="let perm">{{perm.field}}</div>
+  </ng-container>
+
+
+  <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
+
+  <mat-row *matRowDef="let row; columns: displayedColumns"></mat-row>
+
+</mat-table>
+
+<!--<app-user-detail [user]="clickedperm" (updated)="onUpdate()"></app-user-detail>-->
