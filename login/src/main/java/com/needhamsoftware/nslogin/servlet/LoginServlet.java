@@ -199,13 +199,11 @@ public class LoginServlet extends HttpServlet implements LoginConstants {
       // this is a request for a public key for verifying our token.
       try {
         KeyPair keyPair = keys.get(kid[0]);
-        if (keyPair == null) {
-          resp.sendError(410, "Requested key:" + kid[0] + " is unknown or has expired.");
-          return;
-        }
         byte[] encoded = keyPair.getPublic().getEncoded();
         resp.getOutputStream().write(encoded);
-
+      } catch (CacheLoader.InvalidCacheLoadException e){
+        resp.sendError(410, "Requested key:" + kid[0] + " is unknown or has expired.");
+        return;
       } catch (Exception e) {
         throw new ServletException(e);
       }

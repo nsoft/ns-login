@@ -31,7 +31,7 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown=true)
 public abstract class Action extends Persisted {
 
-  @Column(unique = true)
+  @Column(unique = true,length = 128)
   @RestFilterEnable
   private String name;
   @ManyToMany

@@ -12,6 +12,7 @@ import com.needhamsoftware.nslogin.service.Filter;
 import com.needhamsoftware.nslogin.service.ObjectService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.shiro.SecurityUtils;
 import org.hibernate.exception.ConstraintViolationException;
 
 import javax.inject.Inject;
@@ -81,24 +82,26 @@ public class RestServlet extends javax.servlet.http.HttpServlet {
           success(resp, null);
         }
       } catch (ClassNotFoundException | ClassCastException e) {
+        resp.addHeader("NSL-Unknown-Type", ref.toString());
         e.printStackTrace();
         Messages.DO.exception(e, log);
         handleError(resp, 400);
       } catch (OptimisticLockException e) {
+        resp.addHeader("NSL-Optimistic-Lock-Failure", ref.toString());
         Messages.DO.sendErrorMessage("Someone (or something) has made a conflicting change while you were working. Please refresh the page to load the new edits and retry your submission.");
         handleError(resp, 400);
       } catch (AuthzException e) {
+        resp.addHeader("NSL-Authz-Failure", SecurityUtils.getSubject().toString());
         log.debug(e);
         Messages.DO.sendErrorMessage("Insufficient Access Rights");
         handleError(resp, 403);
       } catch (Exception e) {
+        resp.addHeader("NSL-Unexpected-Exception", e.getMessage() + "(" + ref + ")");
         Messages.DO.sendErrorMessage("Internal Error:" + e.getMessage());
         log.error("Unexpected Exception!", e);
         handleError(resp,500);
       }
-
     }
-
   }
 
   private String readAll(Scanner s) {

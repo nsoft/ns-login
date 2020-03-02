@@ -7,6 +7,8 @@
 /src/main/webapp/*-es2015.js
 /src/main/webapp/*-es5.js.map
 /src/main/webapp/*-es2015.js.map
+/src/main/webapp/scripts.js
+/src/main/webapp/scripts.js.map
 
 /dist
 /build

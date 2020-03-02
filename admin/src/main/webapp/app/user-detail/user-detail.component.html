@@ -3,7 +3,43 @@
 <dl>
   <dt>Email:</dt><dd>{{user.userEmail}}</dd>
   <dt>Username:</dt><dd>{{user.username}}</dd>
-  <dt>Roles:</dt><dd><div><ul *ngFor="let role of user.roles" ><li>{{role.name}}</li></ul></div></dd>
-  <dt>Intrinsic Permissions:</dt><dd><div><ul *ngFor="let perm of user.intrinsicPermissions" ><li>{{perm.type}}:{{perm.action}}:{{perm.objId}}:{{perm.field}}</li></ul></div></dd>
+  <dt><label for="roleInput">Roles:</label></dt>
+  <dd><div class="chipField" >
+    <mat-form-field>
+      <mat-chip-list  #chipListRoles aria-label="Role selection">
+        <mat-chip
+          *ngFor="let role of user.roles"
+          [selectable]="selectable"
+          [removable]="removable"
+          (removed)="removeRole(role)">
+          {{role.name}}
+          <mat-icon matChipRemove *ngIf="removable">cancel</mat-icon></mat-chip>
+        <input id="roleInput" #roleInput
+               placeholder="Type to add roles for user {{user.id}}"
+               [formControl]="roleCtrl"
+               [matAutocomplete]="auto"
+               [matChipInputFor]="chipListRoles"
+               [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
+               (matChipInputTokenEnd)="addRole($event)">
+      </mat-chip-list>
+      <mat-autocomplete
+        #auto="matAutocomplete"
+        (optionSelected)="selectedRole($event)">
+        <mat-option
+          *ngFor="let role of filteredRoles | async"
+          [value]="role.name">
+          {{role.name}}
+        </mat-option>
+      </mat-autocomplete>
+    </mat-form-field>
+  </div></dd>
+  <dt>Intrinsic Permissions:</dt>
+  <dd><div class="chipField" *ngIf="user.intrinsicPermissions">
+    <mat-chip-list #chipListPermissions aria-label="Permission selection" >
+      <mat-chip *ngFor="let perm of user.intrinsicPermissions" [selectable]="selectable"
+                [removable]="removable" (removed)="removePerm(perm)">{{perm.type}}:{{perm.action}}:{{perm.objId}}:{{perm.field}}
+        <mat-icon matChipRemove *ngIf="removable">cancel</mat-icon></mat-chip>
+    </mat-chip-list>
+  </div></dd>
 </dl>
 </div>

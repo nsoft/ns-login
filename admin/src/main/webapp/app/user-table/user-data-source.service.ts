@@ -2,7 +2,7 @@ import {Injectable} from '@angular/core';
 import {CollectionViewer} from '@angular/cdk/collections';
 import {BehaviorSubject, Observable, of} from 'rxjs';
 import {NSRESTService} from '../ns-rest.service';
-import {catchError, finalize} from 'rxjs/operators';
+import {catchError, finalize, tap} from 'rxjs/operators';
 import {User} from '../model/User';
 
 @Injectable({
@@ -16,10 +16,11 @@ export class UserDataSourceService {
 
   public loading$ = this.loadingSubject.asObservable();
 
-  constructor(private rest: NSRESTService) { }
+  constructor(private rest: NSRESTService) {
+  }
 
   // noinspection JSUnusedLocalSymbols
-  connect(collectionViewer: CollectionViewer): Observable<any[]|[]> {
+  connect(collectionViewer: CollectionViewer): Observable<any[] | []> {
     return this.usersSubject.asObservable();
   }
 
@@ -30,16 +31,15 @@ export class UserDataSourceService {
   }
 
   loadUsers(start = 0,
-            rows = 5, filter = '', sort = 'asc') {
+            rows = 5, filter = '', sort = 'asc'): Observable<User[]> {
 
     this.loadingSubject.next(true);
-
-    this.rest.find('AppUser', filter, sort, start, rows)
+    return this.rest.find('AppUser', filter, sort, start, rows)
       .pipe(
         catchError(() => of([])),
-        finalize(() => this.loadingSubject.next(false))
-      )
-      .subscribe(users => this.usersSubject.next(users));
+        finalize(() => this.loadingSubject.next(false)),
+        tap(users => this.usersSubject.next(users))
+      );
   }
 
   data() {

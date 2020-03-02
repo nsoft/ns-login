@@ -41,10 +41,6 @@ public class AppUserRef extends Persisted {
 
   public AppUserRef() {}
 
-  public AppUserRef(AccountRequest request) {
-    this.username = request.getUsername();
-  }
-
   AppUserRef(AppUser appUser) {
     this.username = appUser.getUsername();
     this.setId(appUser.getId());
@@ -62,9 +58,5 @@ public class AppUserRef extends Persisted {
   public void setUsername(String username) {
     this.username = username;
   }
-
-
-
-
 
 }

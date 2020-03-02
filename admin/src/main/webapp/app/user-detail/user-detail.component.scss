@@ -6,9 +6,9 @@
 }
 
 dl {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 25% 75%;
+  grid-auto-rows: 72px ;
   margin:10px;
   box-shadow: #898989 1px 10px 15px;
   width: 100%;
@@ -23,10 +23,13 @@ dt,dd {
 }
 
 dt {
-  float:left;
-  flex-basis: 25%;
   font-weight: bold;
-  align-self: flex-start;
+  button {
+    float:right;
+    margin: -5px;
+    line-height: 27px;
+    background: plum;
+  }
 }
 
 dd {
@@ -43,7 +46,10 @@ dd {
 
     }
   }
-  float:left;
-  flex-grow:1;
-  flex-basis: 70%;
+  .chipField {
+    width: 100%;
+    .mat-form-field {
+      width: 100%;
+    }
+  }
 }

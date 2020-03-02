@@ -1,8 +1,9 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, OnInit, ViewChild} from '@angular/core';
 import {UserDataSourceService} from './user-data-source.service';
 import {NSRESTService} from '../ns-rest.service';
 import {SelectionModel} from '@angular/cdk/collections';
 import {User} from '../model/User';
+import {MatTable} from '@angular/material/table';
 
 @Component({
   selector: 'app-user-table',
@@ -11,16 +12,19 @@ import {User} from '../model/User';
 })
 export class UserTableComponent implements OnInit {
 
-  constructor(private nsrestService: NSRESTService) {}
+  constructor(private nsrestService: NSRESTService) {
+  }
 
   dataSource: UserDataSourceService;
   displayedColumns = ['select', 'id', 'name', 'email'];
-  selection = new SelectionModel(false, null);
+  selection = new SelectionModel<User>(false, null);
   clickedUser: User;
+  @ViewChild(MatTable) table: MatTable<User>;
 
   ngOnInit() {
+    this.selection.isSelected = this.isChecked.bind(this);
     this.dataSource = new UserDataSourceService(this.nsrestService);
-    this.dataSource.loadUsers();
+    this.dataSource.loadUsers().subscribe();
   }
 
   /** Whether the number of selected elements matches the total number of rows. */
@@ -40,5 +44,18 @@ export class UserTableComponent implements OnInit {
   rowClicked(event, user) {
     event.stopPropagation();
     this.clickedUser = user;
+  }
+
+  onUpdate() {
+    const oldSelections = this.selection;
+    this.dataSource.loadUsers().subscribe(() => {
+      this.table.renderRows();
+      oldSelections.selected.forEach(selected => this.selection.select(selected) );
+    });
+  }
+
+  isChecked(row: any): boolean {
+    const found = this.selection.selected.find(el => el.id === row.id);
+    return !!found;
   }
 }

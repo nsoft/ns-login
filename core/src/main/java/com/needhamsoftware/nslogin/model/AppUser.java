@@ -20,10 +20,7 @@ import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.voodoodyne.jackson.jsog.JSOGGenerator;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
+import javax.persistence.*;
 import java.time.Instant;
 import java.util.List;
 
@@ -51,8 +48,8 @@ public class AppUser extends Persisted {
   @ManyToOne
   private UserSecurity securityInfo;
 
-  // the user's roles, populated only for Principals and derived from JWT token
-  private transient List<Role> roles;
+  @ManyToMany(cascade = CascadeType.ALL)
+  private List<Role> roles;
 
   @OneToMany
   // permissions that the user has regardless of roles (edit self, etc)
@@ -145,5 +142,10 @@ public class AppUser extends Persisted {
 
   public void setIntrinsicPermissions(List<Permission> intrinsicPermissions) {
     this.intrinsicPermissions = intrinsicPermissions;
+  }
+
+  @Override
+  public String toString() {
+    return "AppUser:" + this.getId();
   }
 }

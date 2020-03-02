@@ -1,4 +1,4 @@
-<mat-table class="users-table mat-elevation-z8" [dataSource]="dataSource">
+<mat-table class="users-table mat-elevation-z8" [dataSource]="dataSource" >
   <ng-container matColumnDef="select">
     <div mat-header-cell *matHeaderCellDef>
       <mat-checkbox style="visibility: hidden" (change)="$event ? masterToggle() : null"
@@ -35,4 +35,4 @@
 
 </mat-table>
 
-<app-user-detail [user]="clickedUser"></app-user-detail>
+<app-user-detail [user]="clickedUser" (updated)="onUpdate()"></app-user-detail>

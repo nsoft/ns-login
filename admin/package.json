@@ -23,7 +23,6 @@
     "@angular/router": "~9.0.2",
     "eslint": "^6.7.2",
     "jsog": "^1.0.7",
-    "jsog-typescript": "^1.0.0-1",
     "rxjs": "~6.5.4",
     "tslib": "^1.10.0",
     "urijs": "^1.19.2",

@@ -36,6 +36,11 @@ public class Role extends Persisted {
   private List<Permission> grants;
 
   @ManyToMany
+  @JoinTable(
+      name = "AppUser_Role",
+      joinColumns = {@JoinColumn(name = "roles_id")},
+      inverseJoinColumns = {@JoinColumn(name = "AppUser_id")}
+  )
   private List<AppUser> members;
 
   public List<AppUser> getMembers() {
