@@ -1,32 +1,32 @@
 <mat-table class="users-table mat-elevation-z8" [dataSource]="dataSource" >
   <ng-container matColumnDef="select">
-    <div mat-header-cell *matHeaderCellDef>
+    <mat-header-cell mat-header-cell *matHeaderCellDef>
       <mat-checkbox style="visibility: hidden" (change)="$event ? masterToggle() : null"
                     [checked]="selection.hasValue() && isAllSelected()"
                     [indeterminate]="selection.hasValue() && !isAllSelected()">
       </mat-checkbox>
-    </div>
-    <div mat-cell *matCellDef="let user">
+    </mat-header-cell>
+    <mat-cell mat-cell *matCellDef="let user">
       <mat-checkbox (click)="rowClicked($event, user)"
                     (change)="$event ? selection.toggle(user) : null"
                     [checked]="selection.isSelected(user)">
       </mat-checkbox>
-    </div>
+    </mat-cell>
   </ng-container>
 
   <ng-container matColumnDef="id">
-    <div *matHeaderCellDef>Id</div>
-    <div *matCellDef="let user">{{user.id}}</div>
+    <mat-header-cell *matHeaderCellDef>Id</mat-header-cell>
+    <mat-cell *matCellDef="let user">{{user.id}}</mat-cell>
   </ng-container>
 
   <ng-container matColumnDef="name">
-    <div *matHeaderCellDef>Name</div>
-    <div *matCellDef="let user">{{user.username}}</div>
+    <mat-header-cell *matHeaderCellDef>Name</mat-header-cell>
+    <mat-cell *matCellDef="let user">{{user.username}}</mat-cell>
   </ng-container>
 
   <ng-container matColumnDef="email">
-    <div *matHeaderCellDef>Email</div>
-    <div *matCellDef="let user">{{user.userEmail}}</div>
+    <mat-header-cell *matHeaderCellDef>Email</mat-header-cell>
+    <mat-cell *matCellDef="let user">{{user.userEmail}}</mat-cell>
   </ng-container>
 
   <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>

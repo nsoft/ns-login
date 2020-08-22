@@ -1,32 +1,32 @@
 <mat-table class="roles-table mat-elevation-z8" [dataSource]="dataSource" >
   <ng-container matColumnDef="select">
-    <div mat-header-cell *matHeaderCellDef>
+    <mat-header-cell *matHeaderCellDef>
       <mat-checkbox style="visibility: hidden" (change)="$event ? masterToggle() : null"
                     [checked]="selection.hasValue() && isAllSelected()"
                     [indeterminate]="selection.hasValue() && !isAllSelected()">
       </mat-checkbox>
-    </div>
-    <div mat-cell *matCellDef="let role">
+    </mat-header-cell>
+    <mat-cell *matCellDef="let role">
       <mat-checkbox (click)="rowClicked($event, role)"
                     (change)="$event ? selection.toggle(role) : null"
                     [checked]="selection.isSelected(role)">
       </mat-checkbox>
-    </div>
+    </mat-cell>
   </ng-container>
 
   <ng-container matColumnDef="id">
-    <div *matHeaderCellDef>Id</div>
-    <div *matCellDef="let role">{{role.id}}</div>
+    <mat-header-cell *matHeaderCellDef>Id</mat-header-cell>
+    <mat-cell *matCellDef="let role">{{role.id}}</mat-cell>
   </ng-container>
 
   <ng-container matColumnDef="key">
-    <div *matHeaderCellDef>Key Name</div>
-    <div *matCellDef="let role">{{role.key}}</div>
+    <mat-header-cell *matHeaderCellDef>Key Name</mat-header-cell>
+    <mat-cell *matCellDef="let role">{{role.key}}</mat-cell>
   </ng-container>
 
   <ng-container matColumnDef="name">
-    <div *matHeaderCellDef>Friendly Name</div>
-    <div *matCellDef="let role">{{role.name}}</div>
+    <mat-header-cell *matHeaderCellDef>Friendly Name</mat-header-cell>
+    <mat-cell *matCellDef="let role">{{role.name}}</mat-cell>
   </ng-container>
 
 
