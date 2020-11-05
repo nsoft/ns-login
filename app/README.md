@@ -30,7 +30,7 @@ files (ROOT.war and login.war) are deployed on the same server.
 
 ## Action Security
 
-One thing shown in this place holder worth noting is the means by which user actions are authorized. 
+One thing shown in this place holder worth noting is the means by which complex user actions are authorized. The demo has one such action for demonstration purposes. It reverses the demo list of things persistently in the database.
 
 * When a request is made here for the reverse_things action [restTest.jsp#L194](https://github.com/nsoft/ns-login/blob/master/app/src/main/webapp/restTest.jsp#L194)
 * that calls update here [nsRest.js#L807](https://github.com/nsoft/ns-login/blob/master/rest/src/main/webapp/js/nsRest.js#L807)
